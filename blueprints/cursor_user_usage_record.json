@@ -1,0 +1,84 @@
+{
+  "identifier": "cursor_user_usage_record",
+  "description": "A daily summary record of Cursor usage for a single user (UTC)",
+  "title": "Cursor User Usage Record",
+  "icon": "Cursor",
+  "schema": {
+    "properties": {
+      "record_date": { "type": "string", "format": "date-time", "title": "Record Date (UTC)" },
+      "org": { "type": "string", "title": "Organization" },
+      "email": { "type": "string", "title": "User Email" },
+      "is_active": { "type": "boolean", "title": "Active" },
+      "total_accepts": { "type": "number", "title": "Total Accepts" },
+      "total_rejects": { "type": "number", "title": "Total Rejects" },
+      "total_tabs_shown": { "type": "number", "title": "Total Tabs Shown" },
+      "total_tabs_accepted": { "type": "number", "title": "Total Tabs Accepted" },
+      "total_lines_added": { "type": "number", "title": "Total Lines Added" },
+      "total_lines_deleted": { "type": "number", "title": "Total Lines Deleted" },
+      "accepted_lines_added": { "type": "number", "title": "Accepted Lines Added" },
+      "accepted_lines_deleted": { "type": "number", "title": "Accepted Lines Deleted" },
+      "composer_requests": { "type": "number", "title": "Composer Requests" },
+      "chat_requests": { "type": "number", "title": "Chat Requests" },
+      "agent_requests": { "type": "number", "title": "Agent Requests" },
+      "subscription_included_reqs": { "type": "number", "title": "Subscription Included Requests" },
+      "api_key_reqs": { "type": "number", "title": "API Key Requests" },
+      "usage_based_reqs": { "type": "number", "title": "Usage-based Requests" },
+      "bugbot_usages": { "type": "number", "title": "Bugbot Usages" },
+      "most_used_model": { "type": "string", "title": "Most Used Model" },
+      "input_tokens": { "type": "number", "title": "Input Tokens" },
+      "output_tokens": { "type": "number", "title": "Output Tokens" },
+      "cache_write_tokens": { "type": "number", "title": "Cache Write Tokens" },
+      "cache_read_tokens": { "type": "number", "title": "Cache Read Tokens" },
+      "total_cents": { "type": "number", "title": "Total Cost (cents)" },
+      "breakdown": { "type": "object", "title": "Breakdown" }
+    },
+    "required": ["record_date", "org", "email"]
+  },
+  "mirrorProperties": {},
+  "calculationProperties": {},
+  "aggregationProperties": {},
+  "relations": {}
+}
+
+{
+  "identifier": "cursor_user_usage_record",
+  "description": "A daily summary record of Cursor usage for a single user (UTC)",
+  "title": "Cursor User Usage Record",
+  "icon": "User",
+  "schema": {
+    "properties": {
+      "record_date": { "type": "string", "format": "date-time", "title": "Record Date (UTC)" },
+      "org": { "type": "string", "title": "Organization" },
+      "email": { "type": "string", "title": "Email" },
+      "is_active": { "type": "boolean", "title": "Active" },
+      "total_accepts": { "type": "number", "title": "Total Accepts" },
+      "total_rejects": { "type": "number", "title": "Total Rejects" },
+      "total_tabs_shown": { "type": "number", "title": "Total Tabs Shown" },
+      "total_tabs_accepted": { "type": "number", "title": "Total Tabs Accepted" },
+      "total_lines_added": { "type": "number", "title": "Total Lines Added" },
+      "total_lines_deleted": { "type": "number", "title": "Total Lines Deleted" },
+      "accepted_lines_added": { "type": "number", "title": "Accepted Lines Added" },
+      "accepted_lines_deleted": { "type": "number", "title": "Accepted Lines Deleted" },
+      "composer_requests": { "type": "number", "title": "Composer Requests" },
+      "chat_requests": { "type": "number", "title": "Chat Requests" },
+      "agent_requests": { "type": "number", "title": "Agent Requests" },
+      "subscription_included_reqs": { "type": "number", "title": "Subscription Included Requests" },
+      "api_key_reqs": { "type": "number", "title": "API Key Requests" },
+      "usage_based_reqs": { "type": "number", "title": "Usage-based Requests" },
+      "bugbot_usages": { "type": "number", "title": "Bugbot Usages" },
+      "most_used_model": { "type": "string", "title": "Most Used Model" },
+      "total_input_tokens": { "type": "number", "title": "Total Input Tokens" },
+      "total_output_tokens": { "type": "number", "title": "Total Output Tokens" },
+      "total_cache_write_tokens": { "type": "number", "title": "Total Cache Write Tokens" },
+      "total_cache_read_tokens": { "type": "number", "title": "Total Cache Read Tokens" },
+      "total_cents": { "type": "number", "title": "Total Cost (cents)" }
+    },
+    "required": ["record_date", "org", "email"]
+  },
+  "mirrorProperties": {},
+  "calculationProperties": {},
+  "aggregationProperties": {},
+  "relations": {}
+}
+
+

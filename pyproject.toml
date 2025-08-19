@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cursor-utilization-port"
+version = "0.1.0"
+description = "Import Cursor Admin API utilization metrics into Port (Python)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [ { name = "Your Org" } ]
+dependencies = [
+  "httpx==0.27.0",
+  "pydantic==2.8.2",
+  "python-dotenv==1.0.1",
+  "tenacity==9.0.0",
+  "pendulum==3.0.0",
+  "orjson==3.10.7",
+  "pyyaml==6.0.2",
+  "rich==13.7.1"
+]
+
+[project.scripts]
+cursor-utilization = "src.main:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["src"]
+
+
+
+
+
