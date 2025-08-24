@@ -11,7 +11,7 @@ class PortExporter:
     def __init__(self, base_url: str, auth_url: str, bulk_upsert_url: str, client_id: str, client_secret: str, dry_run: bool = False) -> None:
         self.base_url = base_url.rstrip("/")
         self.auth_url = auth_url
-        self.bulk_upsert_url = bulk_upsert_url
+        # bulk_upsert_url is deprecated - we build per-blueprint URLs
         self.client_id = client_id
         self.client_secret = client_secret
         self.dry_run = dry_run
@@ -38,29 +38,35 @@ class PortExporter:
         token = self._get_token()
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    def _format_entity(self, blueprint: str, identifier: str, properties: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_entity(self, identifier: str, properties: Dict[str, Any]) -> Dict[str, Any]:
+        # Port API expects entity format without "entity" wrapper for bulk endpoints
         return {
-            "entity": {
-                "blueprint": blueprint,
-                "identifier": identifier,
-                "properties": properties,
-            }
+            "identifier": identifier,
+            "properties": properties,
         }
 
     @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
-    def bulk_upsert(self, entities: List[Dict[str, Any]]) -> None:
+    def bulk_upsert_blueprint(self, blueprint: str, entities: List[Dict[str, Any]]) -> None:
         if self.dry_run:
             return
-        resp = self._client.post(self.bulk_upsert_url, headers=self._headers(), json={"entities": entities})
+        # Use correct Port API endpoint: /v1/blueprints/{blueprint}/entities/bulk
+        url = f"{self.base_url}/v1/blueprints/{blueprint}/entities/bulk"
+        resp = self._client.post(url, headers=self._headers(), json={"entities": entities})
         resp.raise_for_status()
 
-    def _bulk_in_chunks(self, entities: List[Dict[str, Any]], chunk_size: int = 300) -> None:
+    def _bulk_in_chunks_by_blueprint(self, blueprint: str, entities: List[Dict[str, Any]], chunk_size: int = 20) -> None:
+        # Port allows max 20 entities per request
         for i in range(0, len(entities), chunk_size):
-            self.bulk_upsert(entities[i : i + chunk_size])
+            chunk = entities[i : i + chunk_size]
+            self.bulk_upsert_blueprint(blueprint, chunk)
 
     def export_org_users_teams(self, org_record: OrgRecord, user_records: List[UserRecord], team_records: List[TeamRecord]) -> None:
-        entities: List[Dict[str, Any]] = []
+        # Group entities by blueprint for separate API calls
+        org_entities: List[Dict[str, Any]] = []
+        user_entities: List[Dict[str, Any]] = []
+        team_entities: List[Dict[str, Any]] = []
 
+        # Org entities
         org_props = {
             "record_date": org_record.record_date_iso,
             "org": org_record.org,
@@ -88,8 +94,9 @@ class PortExporter:
             "total_cents": org_record.totals.total_cents,
             "breakdown": org_record.breakdown,
         }
-        entities.append(self._format_entity("cursor_usage_record", org_record.identifier, org_props))
+        org_entities.append(self._format_entity(org_record.identifier, org_props))
 
+        # User entities
         for ur in user_records:
             up = {
                 "record_date": ur.record_date_iso,
@@ -119,7 +126,9 @@ class PortExporter:
                 "total_cents": ur.totals.total_cents,
                 "breakdown": ur.breakdown,
             }
-            entities.append(self._format_entity("cursor_user_usage_record", ur.identifier, up))
+            user_entities.append(self._format_entity(ur.identifier, up))
+        
+        # Team entities
         for tr in team_records:
             tp = {
                 "record_date": tr.record_date_iso,
@@ -149,55 +158,12 @@ class PortExporter:
                 "total_cents": tr.totals.total_cents,
                 "breakdown": tr.breakdown,
             }
-            entities.append(self._format_entity("cursor_team_usage_record", tr.identifier, tp))
+            team_entities.append(self._format_entity(tr.identifier, tp))
 
-        self._bulk_in_chunks(entities)
-
-from __future__ import annotations
-
-from typing import Any, Dict, List
-
-import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-
-
-class PortExporter:
-    def __init__(self, base_url: str, auth_url: str, bulk_upsert_url: str, client_id: str, client_secret: str) -> None:
-        self.base_url = base_url.rstrip("/")
-        self.auth_url = auth_url
-        self.bulk_upsert_url = bulk_upsert_url
-        self.client_id = client_id
-        self.client_secret = client_secret
-
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
-    async def _get_access_token(self) -> str:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            resp = await client.post(
-                self.auth_url,
-                json={"clientId": self.client_id, "clientSecret": self.client_secret},
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data.get("accessToken") or data.get("access_token")
-
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(multiplier=1, min=1, max=10), reraise=True)
-    async def bulk_upsert(self, payload: Dict[str, Any]) -> Dict[str, Any]:
-        token = await self._get_access_token()
-        headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(self.bulk_upsert_url, headers=headers, json=payload)
-            resp.raise_for_status()
-            return resp.json() if resp.content else {}
-
-    @staticmethod
-    def build_entity(identifier: str, blueprint: str, properties: Dict[str, Any]) -> Dict[str, Any]:
-        return {
-            "entity": {
-                "identifier": identifier,
-                "title": identifier,
-                "blueprint": blueprint,
-                "properties": properties,
-            }
-        }
-
-
+        # Send separate requests per blueprint
+        if org_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_usage_record", org_entities)
+        if user_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_user_usage_record", user_entities)
+        if team_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_team_usage_record", team_entities)

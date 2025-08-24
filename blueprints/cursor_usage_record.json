@@ -2,7 +2,7 @@
   "identifier": "cursor_usage_record",
   "description": "A daily summary record of Cursor usage for an organization (UTC)",
   "title": "Cursor Usage Record",
-  "icon": "Cursor",
+  "icon": "AI",
   "schema": {
     "properties": {
       "record_date": { "type": "string", "format": "date-time", "title": "Record Date (UTC)" },
