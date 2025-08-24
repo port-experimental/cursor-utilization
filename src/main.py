@@ -86,6 +86,8 @@ def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], 
                     break
                 page += 1
             logging.info(f"  Retrieved {total_events} usage events from Cursor API")
+            
+
 
             org_record, user_records = aggregate_daily(cfg.org_identifier, day_start, summaries, events)
             logging.info(f"  Aggregated data: 1 org record, {len(user_records)} user records")

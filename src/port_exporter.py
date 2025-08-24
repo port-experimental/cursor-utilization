@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict, List
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -11,7 +12,6 @@ class PortExporter:
     def __init__(self, base_url: str, auth_url: str, bulk_upsert_url: str, client_id: str, client_secret: str, dry_run: bool = False) -> None:
         self.base_url = base_url.rstrip("/")
         self.auth_url = auth_url
-        # bulk_upsert_url is deprecated - we build per-blueprint URLs
         self.client_id = client_id
         self.client_secret = client_secret
         self.dry_run = dry_run
@@ -38,19 +38,22 @@ class PortExporter:
         token = self._get_token()
         return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
-    def _format_entity(self, identifier: str, properties: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_entity(self, identifier: str, properties: Dict[str, Any], relations: Dict[str, Any] = None) -> Dict[str, Any]:
         # Port API expects entity format without "entity" wrapper for bulk endpoints
-        return {
+        entity = {
             "identifier": identifier,
             "properties": properties,
         }
+        if relations:
+            entity["relations"] = relations
+        return entity
 
     @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
     def bulk_upsert_blueprint(self, blueprint: str, entities: List[Dict[str, Any]]) -> None:
         if self.dry_run:
             return
         # Use correct Port API endpoint: /v1/blueprints/{blueprint}/entities/bulk
-        url = f"{self.base_url}/v1/blueprints/{blueprint}/entities/bulk"
+        url = f"{self.base_url}/v1/blueprints/{blueprint}/entities/bulk?upsert=true&merge=true"
         resp = self._client.post(url, headers=self._headers(), json={"entities": entities})
         resp.raise_for_status()
 
@@ -126,7 +129,11 @@ class PortExporter:
                 "total_cents": ur.totals.total_cents,
                 "breakdown": ur.breakdown,
             }
-            user_entities.append(self._format_entity(ur.identifier, up))
+            # Add user relation separately
+            user_relations = {
+                "user": ur.totals.email
+            }
+            user_entities.append(self._format_entity(ur.identifier, up, user_relations))
         
         # Team entities
         for tr in team_records:

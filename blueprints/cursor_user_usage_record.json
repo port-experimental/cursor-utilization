@@ -37,5 +37,12 @@
   "mirrorProperties": {},
   "calculationProperties": {},
   "aggregationProperties": {},
-  "relations": {}
+  "relations": {
+    "user": {
+      "title": "User",
+      "target": "_user",
+      "required": false,
+      "many": false
+    }
+  }
 }
