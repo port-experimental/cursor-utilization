@@ -13,6 +13,11 @@ on:
         description: 'number of days to process'
         required: false
         default: '1'
+      with_relations:
+        description: 'Include Port relations between entities'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   run:
@@ -34,13 +39,12 @@ jobs:
           PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
           PORT_BASE_URL: ${{ vars.PORT_BASE_URL || 'https://api.getport.io' }}
           PORT_AUTH_URL: ${{ vars.PORT_AUTH_URL || 'https://api.getport.io/v1/auth/access_token' }}
-          PORT_BULK_UPSERT_URL: ${{ vars.PORT_BULK_UPSERT_URL || 'https://api.getport.io/v1/bulk/entities' }}
           ORG_IDENTIFIER: ${{ vars.ORG_IDENTIFIER }}
           TIMEZONE: UTC
           LOOKBACK_DAYS: 1
           DRY_RUN: false
         run: |
           source .venv/bin/activate
-          python -m src.main --mode "${{ inputs.mode || 'daily' }}" --days "${{ inputs.days || '1' }}"
+          python -m src.main --mode "${{ inputs.mode || 'daily' }}" --days "${{ inputs.days || '1' }}" ${{ inputs.with_relations == true && '--with-relations' || '' }}
 
 

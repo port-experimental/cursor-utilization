@@ -37,7 +37,6 @@ def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], 
     exporter = PortExporter(
         base_url=cfg.port_base_url,
         auth_url=cfg.port_auth_url,
-        bulk_upsert_url=cfg.port_bulk_upsert_url,
         client_id=cfg.port_client_id,
         client_secret=cfg.port_client_secret,
         dry_run=cfg.dry_run,

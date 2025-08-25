@@ -20,7 +20,7 @@ Import Cursor Admin API metrics into Port as daily records (org + user) with eve
 - Port client credentials (or an API token) and a Port app with blueprints
 
 ### Setup
-1) Create and export environment variables (or copy `.env.sample` to `.env` in your runner):
+1) Create and export environment variables (or copy `env.sample` to `.env` in your runner):
 
 ```
 X_CURSOR_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -28,7 +28,6 @@ PORT_CLIENT_ID=your_port_client_id
 PORT_CLIENT_SECRET=your_port_client_secret
 PORT_BASE_URL=https://api.getport.io
 PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token
-PORT_BULK_UPSERT_URL=https://api.getport.io/v1/bulk/entities
 ORG_IDENTIFIER=your-org
 TIMEZONE=UTC
 LOOKBACK_DAYS=1
@@ -62,7 +61,6 @@ Workflow: `.github/workflows/cursor-utilization.yml` runs nightly and on demand.
 
 ### Notes
 - The Cursor Admin API enforces a 90-day max range per request to daily usage; the workflow slices ranges automatically.
-- Bulk upsert endpoint is configurable via `PORT_BULK_UPSERT_URL` to match your Port environment/version.
 - Optional team aggregation: provide a JSON or YAML mapping via `--team-map path/to/map.json` containing `{ "user@org.com": "team-name" }`. When provided, team/day entities are exported as `cursor_team_usage_record`.
 - Relations: pass `--with-relations` to include Port relations between entities (user relations for user records, team member relations for team records).
 - Anonymization: pass `--anonymize-emails` to hash emails in outputs.

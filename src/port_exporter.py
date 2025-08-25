@@ -9,7 +9,7 @@ from .models import OrgRecord, UserRecord, TeamRecord
 
 
 class PortExporter:
-    def __init__(self, base_url: str, auth_url: str, bulk_upsert_url: str, client_id: str, client_secret: str, dry_run: bool = False) -> None:
+    def __init__(self, base_url: str, auth_url: str, client_id: str, client_secret: str, dry_run: bool = False) -> None:
         self.base_url = base_url.rstrip("/")
         self.auth_url = auth_url
         self.client_id = client_id

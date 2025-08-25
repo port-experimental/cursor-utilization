@@ -12,7 +12,6 @@ class AppConfig:
     port_client_secret: str
     port_base_url: str
     port_auth_url: str
-    port_bulk_upsert_url: str
     org_identifier: str
     timezone: str
     lookback_days: int
@@ -28,7 +27,6 @@ def load_config() -> AppConfig:
         port_client_secret=os.environ.get("PORT_CLIENT_SECRET", ""),
         port_base_url=os.environ.get("PORT_BASE_URL", "https://api.getport.io"),
         port_auth_url=os.environ.get("PORT_AUTH_URL", "https://api.getport.io/v1/auth/access_token"),
-        port_bulk_upsert_url=os.environ.get("PORT_BULK_UPSERT_URL", "https://api.getport.io/v1/bulk/entities"),
         org_identifier=os.environ["ORG_IDENTIFIER"],
         timezone=os.environ.get("TIMEZONE", "UTC"),
         lookback_days=int(os.environ.get("LOOKBACK_DAYS", "1")),
