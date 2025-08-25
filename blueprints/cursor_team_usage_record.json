@@ -37,7 +37,14 @@
   "mirrorProperties": {},
   "calculationProperties": {},
   "aggregationProperties": {},
-  "relations": {}
+  "relations": {
+    "team_members": {
+      "title": "Team Members",
+      "target": "cursor_user_usage_record",
+      "many": true,
+      "required": false
+    }
+  }
 }
 
 

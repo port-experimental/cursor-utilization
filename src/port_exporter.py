@@ -63,7 +63,7 @@ class PortExporter:
             chunk = entities[i : i + chunk_size]
             self.bulk_upsert_blueprint(blueprint, chunk)
 
-    def export_org_users_teams(self, org_record: OrgRecord, user_records: List[UserRecord], team_records: List[TeamRecord]) -> None:
+    def export_org_users_teams(self, org_record: OrgRecord, user_records: List[UserRecord], team_records: List[TeamRecord], with_relations: bool = False) -> None:
         # Group entities by blueprint for separate API calls
         org_entities: List[Dict[str, Any]] = []
         user_entities: List[Dict[str, Any]] = []
@@ -129,10 +129,12 @@ class PortExporter:
                 "total_cents": ur.totals.total_cents,
                 "breakdown": ur.breakdown,
             }
-            # Add user relation separately
-            user_relations = {
-                "user": ur.totals.email
-            }
+            # Add user relation only if requested
+            user_relations = None
+            if with_relations:
+                user_relations = {
+                    "user": ur.totals.email
+                }
             user_entities.append(self._format_entity(ur.identifier, up, user_relations))
         
         # Team entities
@@ -165,7 +167,13 @@ class PortExporter:
                 "total_cents": tr.totals.total_cents,
                 "breakdown": tr.breakdown,
             }
-            team_entities.append(self._format_entity(tr.identifier, tp))
+            # Add team member relations only if requested
+            team_relations = None
+            if with_relations and "team_member_identifiers" in tr.breakdown:
+                team_relations = {
+                    "team_members": tr.breakdown["team_member_identifiers"]
+                }
+            team_entities.append(self._format_entity(tr.identifier, tp, team_relations))
 
         # Send separate requests per blueprint
         if org_entities:

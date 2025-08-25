@@ -26,11 +26,12 @@ def slice_days_utc(days: int, start_utc: Optional[str] = None, end_utc: Optional
     return [int(now.subtract(days=i).int_timestamp * 1000) for i in range(days)][::-1]
 
 
-def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], email_to_team_path: Optional[str], anonymize: bool) -> None:
+def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], email_to_team_path: Optional[str], anonymize: bool, with_relations: bool) -> None:
     logging.info(f"Starting Cursor → Port sync: mode={mode}, days={days}")
     
     cfg = load_config()
-    logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}")
+    relations_status = "enabled" if with_relations else "disabled"
+    logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}, relations: {relations_status}")
     
     cursor = CursorAdapter(api_key=cfg.cursor_api_key)
     exporter = PortExporter(
@@ -106,16 +107,19 @@ def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], 
                 logging.info("  Applied email anonymization")
 
             team_records = []
+            unmapped_users = []
             if email_to_team:
-                team_records = aggregate_teams(cfg.org_identifier, day_start, user_records, email_to_team)
+                team_records, unmapped_users = aggregate_teams(cfg.org_identifier, day_start, user_records, email_to_team)
                 logging.info(f"  Generated {len(team_records)} team records")
+                if unmapped_users:
+                    logging.warning(f"  {len(unmapped_users)} users without team mapping were assigned to 'unknown' team")
 
             if cfg.dry_run:
                 logging.info("  DRY RUN: Skipping Port API export")
             else:
                 logging.info("  Exporting to Port API...")
             
-            exporter.export_org_users_teams(org_record, user_records, team_records)
+            exporter.export_org_users_teams(org_record, user_records, team_records, with_relations)
             
             if not cfg.dry_run:
                 logging.info("  ✓ Successfully exported to Port")
@@ -135,9 +139,10 @@ def main() -> None:
     parser.add_argument("--end", type=str, default=None, help="End date (YYYY-MM-DD) UTC")
     parser.add_argument("--team-map", type=str, default=None, help="Path to JSON/YAML mapping { email: team }")
     parser.add_argument("--anonymize-emails", action="store_true", help="Hash emails before export")
+    parser.add_argument("--with-relations", action="store_true", help="Include Port relations between entities")
     args = parser.parse_args()
 
-    run(mode=args.mode, days=args.days, start_utc=args.start, end_utc=args.end, email_to_team_path=args.team_map, anonymize=args.anonymize_emails)
+    run(mode=args.mode, days=args.days, start_utc=args.start, end_utc=args.end, email_to_team_path=args.team_map, anonymize=args.anonymize_emails, with_relations=args.with_relations)
 
 if __name__ == "__main__":
     main()

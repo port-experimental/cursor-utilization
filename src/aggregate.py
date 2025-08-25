@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, defaultdict
 from typing import Any, Dict, Iterable, List, Tuple
+import logging
 import pendulum as pdt
 
 from .models import (
@@ -141,17 +142,26 @@ def aggregate_teams(
     date_epoch_ms: int,
     user_records: List[UserRecord],
     email_to_team: Dict[str, str],
-) -> List[TeamRecord]:
+) -> Tuple[List[TeamRecord], List[str]]:
     # Group user totals by team
     team_to_totals: Dict[str, TeamTotals] = {}
     team_model_counts: Dict[str, Counter] = defaultdict(Counter)
+    team_to_user_identifiers: Dict[str, List[str]] = defaultdict(list)
+    unmapped_users: List[str] = []
 
     for ur in user_records:
+        if ur.totals.email not in email_to_team:
+            unmapped_users.append(ur.totals.email)
+            logging.warning(f"User '{ur.totals.email}' has no team mapping, assigning to 'unknown' team")
+        
         team = email_to_team.get(ur.totals.email, "unknown")
         tt = team_to_totals.get(team)
         if tt is None:
             tt = TeamTotals(team=team)
             team_to_totals[team] = tt
+        
+        # Track user identifiers for this team (for relations)
+        team_to_user_identifiers[team].append(ur.identifier)
         if ur.totals.is_active:
             tt.total_active_users += 1
         tt.total_accepts += ur.totals.total_accepts
@@ -183,6 +193,12 @@ def aggregate_teams(
         if team_model_counts[team]:
             tt.most_used_model = team_model_counts[team].most_common(1)[0][0]
         identifier = f"cursor:{org}:{team}:{date_iso[:10]}"
+        
+        # Add team member identifiers to breakdown for potential relations
+        breakdown = {
+            "team_member_identifiers": team_to_user_identifiers[team]
+        }
+        
         team_records.append(
             TeamRecord(
                 identifier=identifier,
@@ -190,8 +206,13 @@ def aggregate_teams(
                 team=team,
                 record_date_iso=date_iso,
                 totals=tt,
-                breakdown={},
+                breakdown=breakdown,
             )
         )
-    return team_records
+    
+    # Log validation summary
+    if unmapped_users:
+        logging.warning(f"Found {len(unmapped_users)} unmapped users. They were assigned to 'unknown' team.")
+    
+    return team_records, unmapped_users
 

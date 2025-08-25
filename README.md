@@ -64,6 +64,7 @@ Workflow: `.github/workflows/cursor-utilization.yml` runs nightly and on demand.
 - The Cursor Admin API enforces a 90-day max range per request to daily usage; the workflow slices ranges automatically.
 - Bulk upsert endpoint is configurable via `PORT_BULK_UPSERT_URL` to match your Port environment/version.
 - Optional team aggregation: provide a JSON or YAML mapping via `--team-map path/to/map.json` containing `{ "user@org.com": "team-name" }`. When provided, team/day entities are exported as `cursor_team_usage_record`.
+- Relations: pass `--with-relations` to include Port relations between entities (user relations for user records, team member relations for team records).
 - Anonymization: pass `--anonymize-emails` to hash emails in outputs.
 
 ### References
