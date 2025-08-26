@@ -50,7 +50,7 @@ pip install -r requirements.txt
 python -m src.main --mode daily --days 1
 ```
 
-Backfill last 30 days:
+Backfill last 30 days: 
 
 ```
 python -m src.main --mode backfill --days 30
