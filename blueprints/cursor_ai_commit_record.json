@@ -5,61 +5,95 @@
   "icon": "Git",
   "schema": {
     "properties": {
-      "record_date": { "type": "string", "format": "date-time", "title": "Record Date (UTC)" },
-      "org": { "type": "string", "title": "Organization" },
-      "user_email": { "type": "string", "title": "User Email" },
-      "total_commits": { "type": "number", "title": "Total Commits" },
-      "total_lines_added": { "type": "number", "title": "Total Lines Added" },
-      "total_lines_deleted": { "type": "number", "title": "Total Lines Deleted" },
-      "tab_lines_added": { "type": "number", "title": "TAB Lines Added" },
-      "tab_lines_deleted": { "type": "number", "title": "TAB Lines Deleted" },
-      "composer_lines_added": { "type": "number", "title": "Composer Lines Added" },
-      "composer_lines_deleted": { "type": "number", "title": "Composer Lines Deleted" },
-      "non_ai_lines_added": { "type": "number", "title": "Non-AI Lines Added" },
-      "non_ai_lines_deleted": { "type": "number", "title": "Non-AI Lines Deleted" },
-      "primary_branch_commits": { "type": "number", "title": "Primary Branch Commits" },
-      "total_unique_repos": { "type": "number", "title": "Total Unique Repositories" },
-      "most_active_repo": { "type": "string", "title": "Most Active Repository" },
-      "ai_assistance_percentage": { "type": "number", "title": "AI Assistance Percentage" },
-      "breakdown": { "type": "object", "title": "Breakdown Details" }
+      "record_date": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Record Date (UTC)"
+      },
+      "org": {
+        "type": "string",
+        "title": "Organization"
+      },
+      "user_email": {
+        "type": "string",
+        "title": "User Email"
+      },
+      "total_commits": {
+        "type": "number",
+        "title": "Total Commits"
+      },
+      "total_lines_added": {
+        "type": "number",
+        "title": "Total Lines Added"
+      },
+      "total_lines_deleted": {
+        "type": "number",
+        "title": "Total Lines Deleted"
+      },
+      "tab_lines_added": {
+        "type": "number",
+        "title": "TAB Lines Added"
+      },
+      "tab_lines_deleted": {
+        "type": "number",
+        "title": "TAB Lines Deleted"
+      },
+      "composer_lines_added": {
+        "type": "number",
+        "title": "Composer Lines Added"
+      },
+      "composer_lines_deleted": {
+        "type": "number",
+        "title": "Composer Lines Deleted"
+      },
+      "non_ai_lines_added": {
+        "type": "number",
+        "title": "Non-AI Lines Added"
+      },
+      "non_ai_lines_deleted": {
+        "type": "number",
+        "title": "Non-AI Lines Deleted"
+      },
+      "primary_branch_commits": {
+        "type": "number",
+        "title": "Primary Branch Commits"
+      },
+      "total_unique_repos": {
+        "type": "number",
+        "title": "Total Unique Repositories"
+      },
+      "most_active_repo": {
+        "type": "string",
+        "title": "Most Active Repository"
+      },
+      "ai_assistance_percentage": {
+        "type": "number",
+        "title": "AI Assistance Percentage"
+      },
+      "breakdown": {
+        "type": "object",
+        "title": "Breakdown Details"
+      }
     },
-    "required": ["record_date", "org", "user_email"]
+    "required": [
+      "record_date",
+      "org",
+      "user_email"
+    ]
   },
   "mirrorProperties": {},
   "calculationProperties": {
-    "ai_assistance_percentage": {
+    "ai_assistance_percentage_calc": {
       "title": "AI Assistance %",
-      "calculation": "((.tab_lines_added + .tab_lines_deleted + .composer_lines_added + .composer_lines_deleted) / (.total_lines_added + .total_lines_deleted)) * 100",
-      "type": "number",
-      "format": "percentage"
+      "calculation": "if (.properties.total_lines_added + .properties.total_lines_deleted) == 0 then 0 else ((.properties.tab_lines_added + .properties.tab_lines_deleted + .properties.composer_lines_added + .properties.composer_lines_deleted) / (.properties.total_lines_added + .properties.total_lines_deleted)) * 100 end",
+      "type": "number"
     }
   },
-  "aggregationProperties": {
-    "weekly_commits": {
-      "title": "Weekly Total Commits",
-      "calculationSpec": {
-        "calculationBy": "entities",
-        "func": "sum",
-        "property": "total_commits"
-      },
-      "query": {
-        "combinator": "and",
-        "rules": [
-          {
-            "property": "record_date",
-            "operator": "between",
-            "value": {
-              "preset": "lastWeek"
-            }
-          }
-        ]
-      }
-    }
-  },
+  "aggregationProperties": {},
   "relations": {
     "user": {
       "title": "User",
-      "target": "_user", 
+      "target": "_user",
       "required": false,
       "many": false
     }

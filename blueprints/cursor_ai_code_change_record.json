@@ -5,83 +5,96 @@
   "icon": "Code",
   "schema": {
     "properties": {
-      "record_date": { "type": "string", "format": "date-time", "title": "Record Date (UTC)" },
-      "org": { "type": "string", "title": "Organization" },
-      "user_email": { "type": "string", "title": "User Email" },
-      "total_changes": { "type": "number", "title": "Total AI Changes" },
-      "total_lines_added": { "type": "number", "title": "Total Lines Added" },
-      "total_lines_deleted": { "type": "number", "title": "Total Lines Deleted" },
-      "tab_changes": { "type": "number", "title": "TAB Changes Count" },
-      "composer_changes": { "type": "number", "title": "Composer Changes Count" },
-      "tab_lines_added": { "type": "number", "title": "TAB Lines Added" },
-      "tab_lines_deleted": { "type": "number", "title": "TAB Lines Deleted" },
-      "composer_lines_added": { "type": "number", "title": "Composer Lines Added" },
-      "composer_lines_deleted": { "type": "number", "title": "Composer Lines Deleted" },
-      "most_used_model": { "type": "string", "title": "Most Used AI Model" },
-      "unique_file_extensions": { "type": "number", "title": "Unique File Extensions" },
-      "tab_vs_composer_ratio": { "type": "number", "title": "TAB vs Composer Ratio" },
-      "average_change_size": { "type": "number", "title": "Average Change Size (lines)" },
-      "breakdown": { "type": "object", "title": "Breakdown Details" }
+      "record_date": {
+        "type": "string",
+        "format": "date-time",
+        "title": "Record Date (UTC)"
+      },
+      "org": {
+        "type": "string",
+        "title": "Organization"
+      },
+      "user_email": {
+        "type": "string",
+        "title": "User Email"
+      },
+      "total_changes": {
+        "type": "number",
+        "title": "Total AI Changes"
+      },
+      "total_lines_added": {
+        "type": "number",
+        "title": "Total Lines Added"
+      },
+      "total_lines_deleted": {
+        "type": "number",
+        "title": "Total Lines Deleted"
+      },
+      "tab_changes": {
+        "type": "number",
+        "title": "TAB Changes Count"
+      },
+      "composer_changes": {
+        "type": "number",
+        "title": "Composer Changes Count"
+      },
+      "tab_lines_added": {
+        "type": "number",
+        "title": "TAB Lines Added"
+      },
+      "tab_lines_deleted": {
+        "type": "number",
+        "title": "TAB Lines Deleted"
+      },
+      "composer_lines_added": {
+        "type": "number",
+        "title": "Composer Lines Added"
+      },
+      "composer_lines_deleted": {
+        "type": "number",
+        "title": "Composer Lines Deleted"
+      },
+      "most_used_model": {
+        "type": "string",
+        "title": "Most Used AI Model"
+      },
+      "unique_file_extensions": {
+        "type": "number",
+        "title": "Unique File Extensions"
+      },
+      "tab_vs_composer_ratio": {
+        "type": "number",
+        "title": "TAB vs Composer Ratio"
+      },
+      "average_change_size": {
+        "type": "number",
+        "title": "Average Change Size (lines)"
+      },
+      "breakdown": {
+        "type": "object",
+        "title": "Breakdown Details"
+      }
     },
-    "required": ["record_date", "org", "user_email"]
+    "required": [
+      "record_date",
+      "org",
+      "user_email"
+    ]
   },
   "mirrorProperties": {},
   "calculationProperties": {
-    "tab_vs_composer_ratio": {
+    "tab_vs_composer_ratio_calc": {
       "title": "TAB vs Composer Ratio",
-      "calculation": "if .composer_changes > 0 then .tab_changes / .composer_changes else null end",
-      "type": "number",
-      "format": "number"
+      "calculation": "if .properties.composer_changes > 0 then .properties.tab_changes / .properties.composer_changes else null end",
+      "type": "number"
     },
-    "average_change_size": {
+    "average_change_size_calc": {
       "title": "Average Change Size",
-      "calculation": "if .total_changes > 0 then (.total_lines_added + .total_lines_deleted) / .total_changes else 0 end",
-      "type": "number",
-      "format": "number"
+      "calculation": "if .properties.total_changes > 0 then (.properties.total_lines_added + .properties.total_lines_deleted) / .properties.total_changes else 0 end",
+      "type": "number"
     }
   },
-  "aggregationProperties": {
-    "weekly_total_changes": {
-      "title": "Weekly Total Changes",
-      "calculationSpec": {
-        "calculationBy": "entities",
-        "func": "sum",
-        "property": "total_changes"
-      },
-      "query": {
-        "combinator": "and",
-        "rules": [
-          {
-            "property": "record_date",
-            "operator": "between",
-            "value": {
-              "preset": "lastWeek"
-            }
-          }
-        ]
-      }
-    },
-    "weekly_lines_generated": {
-      "title": "Weekly AI Lines Generated",
-      "calculationSpec": {
-        "calculationBy": "entities",
-        "func": "sum",
-        "property": "total_lines_added"
-      },
-      "query": {
-        "combinator": "and",
-        "rules": [
-          {
-            "property": "record_date",
-            "operator": "between",
-            "value": {
-              "preset": "lastWeek"
-            }
-          }
-        ]
-      }
-    }
-  },
+  "aggregationProperties": {},
   "relations": {
     "user": {
       "title": "User",
