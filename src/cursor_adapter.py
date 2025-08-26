@@ -52,3 +52,115 @@ class CursorAdapter:
         resp.raise_for_status()
         return resp.json()
 
+    # AI Code Tracking API Methods
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
+    def get_ai_commit_metrics(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        Get AI commit metrics (paginated JSON)
+        
+        Args:
+            start_date: ISO date string, "now", or relative like "7d" 
+            end_date: ISO date string, "now", or relative like "0d"
+            user: Email, encoded ID, or numeric ID to filter by user
+            page: Page number (1-based)
+            page_size: Results per page (max 1000)
+        """
+        params: Dict[str, Any] = {"page": page, "pageSize": page_size}
+        if start_date is not None:
+            params["startDate"] = start_date
+        if end_date is not None:
+            params["endDate"] = end_date
+        if user is not None:
+            params["user"] = user
+        
+        # Rate limiting: 5 requests per minute per team, per endpoint
+        resp = self._client.get("/analytics/ai-code/commits", auth=self._auth(), params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
+    def get_ai_commit_metrics_csv(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user: Optional[str] = None,
+    ) -> str:
+        """
+        Get AI commit metrics as CSV (streaming)
+        
+        Returns raw CSV content as string
+        """
+        params: Dict[str, Any] = {}
+        if start_date is not None:
+            params["startDate"] = start_date
+        if end_date is not None:
+            params["endDate"] = end_date
+        if user is not None:
+            params["user"] = user
+        
+        resp = self._client.get("/analytics/ai-code/commits.csv", auth=self._auth(), params=params)
+        resp.raise_for_status()
+        return resp.text
+
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
+    def get_ai_code_change_metrics(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user: Optional[str] = None,
+        page: int = 1,
+        page_size: int = 100,
+    ) -> Dict[str, Any]:
+        """
+        Get AI code change metrics (paginated JSON)
+        
+        Args:
+            start_date: ISO date string, "now", or relative like "14d"
+            end_date: ISO date string, "now", or relative like "0d"
+            user: Email, encoded ID, or numeric ID to filter by user
+            page: Page number (1-based)
+            page_size: Results per page (max 1000)
+        """
+        params: Dict[str, Any] = {"page": page, "pageSize": page_size}
+        if start_date is not None:
+            params["startDate"] = start_date
+        if end_date is not None:
+            params["endDate"] = end_date
+        if user is not None:
+            params["user"] = user
+        
+        resp = self._client.get("/analytics/ai-code/changes", auth=self._auth(), params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
+    def get_ai_code_change_metrics_csv(
+        self,
+        start_date: Optional[str] = None,
+        end_date: Optional[str] = None,
+        user: Optional[str] = None,
+    ) -> str:
+        """
+        Get AI code change metrics as CSV (streaming)
+        
+        Returns raw CSV content as string
+        """
+        params: Dict[str, Any] = {}
+        if start_date is not None:
+            params["startDate"] = start_date
+        if end_date is not None:
+            params["endDate"] = end_date
+        if user is not None:
+            params["user"] = user
+        
+        resp = self._client.get("/analytics/ai-code/changes.csv", auth=self._auth(), params=params)
+        resp.raise_for_status()
+        return resp.text
+

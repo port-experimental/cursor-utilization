@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .models import OrgRecord, UserRecord, TeamRecord
+from .models import OrgRecord, UserRecord, TeamRecord, AiCommitRecord, AiCodeChangeRecord
 
 
 class PortExporter:
@@ -182,3 +182,75 @@ class PortExporter:
             self._bulk_in_chunks_by_blueprint("cursor_user_usage_record", user_entities)
         if team_entities:
             self._bulk_in_chunks_by_blueprint("cursor_team_usage_record", team_entities)
+
+    def export_ai_commit_records(self, commit_records: List[AiCommitRecord], with_relations: bool = False) -> None:
+        """Export AI commit records to Port"""
+        commit_entities: List[Dict[str, Any]] = []
+
+        for cr in commit_records:
+            props = {
+                "record_date": cr.record_date_iso,
+                "org": cr.org,
+                "user_email": cr.user_email,
+                "total_commits": cr.totals.total_commits,
+                "total_lines_added": cr.totals.total_lines_added,
+                "total_lines_deleted": cr.totals.total_lines_deleted,
+                "tab_lines_added": cr.totals.tab_lines_added,
+                "tab_lines_deleted": cr.totals.tab_lines_deleted,
+                "composer_lines_added": cr.totals.composer_lines_added,
+                "composer_lines_deleted": cr.totals.composer_lines_deleted,
+                "non_ai_lines_added": cr.totals.non_ai_lines_added,
+                "non_ai_lines_deleted": cr.totals.non_ai_lines_deleted,
+                "primary_branch_commits": cr.totals.primary_branch_commits,
+                "total_unique_repos": cr.totals.total_unique_repos,
+                "most_active_repo": cr.totals.most_active_repo,
+                "breakdown": cr.breakdown,
+            }
+
+            # Add user relation if requested
+            commit_relations = None
+            if with_relations:
+                commit_relations = {
+                    "user": cr.user_email
+                }
+            
+            commit_entities.append(self._format_entity(cr.identifier, props, commit_relations))
+
+        if commit_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_ai_commit_record", commit_entities)
+
+    def export_ai_code_change_records(self, change_records: List[AiCodeChangeRecord], with_relations: bool = False) -> None:
+        """Export AI code change records to Port"""
+        change_entities: List[Dict[str, Any]] = []
+
+        for ccr in change_records:
+            props = {
+                "record_date": ccr.record_date_iso,
+                "org": ccr.org,
+                "user_email": ccr.user_email,
+                "total_changes": ccr.totals.total_changes,
+                "total_lines_added": ccr.totals.total_lines_added,
+                "total_lines_deleted": ccr.totals.total_lines_deleted,
+                "tab_changes": ccr.totals.tab_changes,
+                "composer_changes": ccr.totals.composer_changes,
+                "tab_lines_added": ccr.totals.tab_lines_added,
+                "tab_lines_deleted": ccr.totals.tab_lines_deleted,
+                "composer_lines_added": ccr.totals.composer_lines_added,
+                "composer_lines_deleted": ccr.totals.composer_lines_deleted,
+                "most_used_model": ccr.totals.most_used_model,
+                "unique_file_extensions": ccr.totals.unique_file_extensions,
+                "breakdown": ccr.breakdown,
+            }
+
+            # Add user relation and AI commits relation if requested
+            change_relations = None
+            if with_relations:
+                change_relations = {
+                    "user": ccr.user_email
+                    # Note: ai_commits relation would need to be implemented based on date matching
+                }
+            
+            change_entities.append(self._format_entity(ccr.identifier, props, change_relations))
+
+        if change_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_ai_code_change_record", change_entities)

@@ -154,3 +154,93 @@ class TeamRecord(BaseModel):
     totals: TeamTotals
     breakdown: Dict[str, Any] = Field(default_factory=dict)
 
+
+# AI Code Tracking API Models
+class AiCommitMetric(BaseModel):
+    # Derived from Cursor AI Code Tracking API /analytics/ai-code/commits
+    commitHash: str
+    userId: str
+    userEmail: str
+    repoName: Optional[str] = None
+    branchName: Optional[str] = None
+    isPrimaryBranch: Optional[bool] = None
+    totalLinesAdded: int = 0
+    totalLinesDeleted: int = 0
+    tabLinesAdded: int = 0
+    tabLinesDeleted: int = 0
+    composerLinesAdded: int = 0
+    composerLinesDeleted: int = 0
+    nonAiLinesAdded: Optional[int] = None
+    nonAiLinesDeleted: Optional[int] = None
+    message: Optional[str] = None
+    commitTs: Optional[str] = None
+    createdAt: str
+
+
+class AiCodeChangeFileMetadata(BaseModel):
+    fileName: Optional[str] = None  # May be omitted in privacy mode
+    fileExtension: Optional[str] = None
+    linesAdded: int = 0
+    linesDeleted: int = 0
+
+
+class AiCodeChangeMetric(BaseModel):
+    # Derived from Cursor AI Code Tracking API /analytics/ai-code/changes
+    changeId: str
+    userId: str
+    userEmail: str
+    source: str  # "TAB" or "COMPOSER"
+    model: Optional[str] = None
+    totalLinesAdded: int = 0
+    totalLinesDeleted: int = 0
+    createdAt: str
+    metadata: List[AiCodeChangeFileMetadata] = Field(default_factory=list)
+
+
+# Aggregated AI Code Tracking Models
+class AiCommitTotals(BaseModel):
+    total_commits: int = 0
+    total_lines_added: int = 0
+    total_lines_deleted: int = 0
+    tab_lines_added: int = 0
+    tab_lines_deleted: int = 0
+    composer_lines_added: int = 0
+    composer_lines_deleted: int = 0
+    non_ai_lines_added: int = 0
+    non_ai_lines_deleted: int = 0
+    primary_branch_commits: int = 0
+    total_unique_repos: int = 0
+    most_active_repo: Optional[str] = None
+
+
+class AiCodeChangeTotals(BaseModel):
+    total_changes: int = 0
+    total_lines_added: int = 0
+    total_lines_deleted: int = 0
+    tab_changes: int = 0
+    composer_changes: int = 0
+    tab_lines_added: int = 0
+    tab_lines_deleted: int = 0
+    composer_lines_added: int = 0
+    composer_lines_deleted: int = 0
+    most_used_model: Optional[str] = None
+    unique_file_extensions: int = 0
+
+
+class AiCommitRecord(BaseModel):
+    identifier: str
+    org: str
+    user_email: str
+    record_date_iso: str
+    totals: AiCommitTotals
+    breakdown: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AiCodeChangeRecord(BaseModel):
+    identifier: str
+    org: str
+    user_email: str
+    record_date_iso: str
+    totals: AiCodeChangeTotals
+    breakdown: Dict[str, Any] = Field(default_factory=dict)
+

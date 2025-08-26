@@ -14,6 +14,13 @@ from .models import (
     UserRecord,
     TeamRecord,
     TeamTotals,
+    AiCommitMetric,
+    AiCodeChangeMetric,
+    AiCommitTotals,
+    AiCodeChangeTotals,
+    AiCommitRecord,
+    AiCodeChangeRecord,
+    AiCodeChangeFileMetadata,
 )
 
 
@@ -215,4 +222,163 @@ def aggregate_teams(
         logging.warning(f"Found {len(unmapped_users)} unmapped users. They were assigned to 'unknown' team.")
     
     return team_records, unmapped_users
+
+
+def aggregate_ai_commits(
+    org: str,
+    date_epoch_ms: int,
+    commits: Iterable[AiCommitMetric],
+) -> List[AiCommitRecord]:
+    """
+    Aggregate AI commit metrics by user for a given day
+    """
+    # Group commits by user
+    user_commits: Dict[str, List[AiCommitMetric]] = defaultdict(list)
+    
+    for commit in commits:
+        user_email = commit.userEmail or "unknown"
+        user_commits[user_email].append(commit)
+    
+    date_iso = epoch_ms_day_to_iso_utc(date_epoch_ms)
+    commit_records: List[AiCommitRecord] = []
+    
+    for user_email, user_commit_list in user_commits.items():
+        # Calculate totals for this user
+        totals = AiCommitTotals()
+        repos_counter: Counter = Counter()
+        
+        for commit in user_commit_list:
+            totals.total_commits += 1
+            totals.total_lines_added += commit.totalLinesAdded
+            totals.total_lines_deleted += commit.totalLinesDeleted
+            totals.tab_lines_added += commit.tabLinesAdded
+            totals.tab_lines_deleted += commit.tabLinesDeleted
+            totals.composer_lines_added += commit.composerLinesAdded
+            totals.composer_lines_deleted += commit.composerLinesDeleted
+            totals.non_ai_lines_added += commit.nonAiLinesAdded or 0
+            totals.non_ai_lines_deleted += commit.nonAiLinesDeleted or 0
+            
+            if commit.isPrimaryBranch:
+                totals.primary_branch_commits += 1
+            
+            if commit.repoName:
+                repos_counter[commit.repoName] += 1
+        
+        totals.total_unique_repos = len(repos_counter)
+        if repos_counter:
+            totals.most_active_repo = repos_counter.most_common(1)[0][0]
+        
+        # Create breakdown with detailed commit info
+        breakdown = {
+            "commits": [c.model_dump() for c in user_commit_list],
+            "repositories": dict(repos_counter),
+            "ai_contribution_breakdown": {
+                "tab_percentage": round((totals.tab_lines_added + totals.tab_lines_deleted) / 
+                                      max(1, totals.total_lines_added + totals.total_lines_deleted) * 100, 2),
+                "composer_percentage": round((totals.composer_lines_added + totals.composer_lines_deleted) / 
+                                           max(1, totals.total_lines_added + totals.total_lines_deleted) * 100, 2),
+                "non_ai_percentage": round((totals.non_ai_lines_added + totals.non_ai_lines_deleted) / 
+                                         max(1, totals.total_lines_added + totals.total_lines_deleted) * 100, 2)
+            }
+        }
+        
+        identifier = f"cursor-ai-commits:{org}:{user_email}:{date_iso[:10]}"
+        
+        commit_records.append(
+            AiCommitRecord(
+                identifier=identifier,
+                org=org,
+                user_email=user_email,
+                record_date_iso=date_iso,
+                totals=totals,
+                breakdown=breakdown,
+            )
+        )
+    
+    return commit_records
+
+
+def aggregate_ai_code_changes(
+    org: str,
+    date_epoch_ms: int,
+    changes: Iterable[AiCodeChangeMetric],
+) -> List[AiCodeChangeRecord]:
+    """
+    Aggregate AI code change metrics by user for a given day
+    """
+    # Group changes by user
+    user_changes: Dict[str, List[AiCodeChangeMetric]] = defaultdict(list)
+    
+    for change in changes:
+        user_email = change.userEmail or "unknown"
+        user_changes[user_email].append(change)
+    
+    date_iso = epoch_ms_day_to_iso_utc(date_epoch_ms)
+    change_records: List[AiCodeChangeRecord] = []
+    
+    for user_email, user_change_list in user_changes.items():
+        # Calculate totals for this user
+        totals = AiCodeChangeTotals()
+        model_counter: Counter = Counter()
+        extension_counter: Counter = Counter()
+        source_counter: Counter = Counter()
+        
+        for change in user_change_list:
+            totals.total_changes += 1
+            totals.total_lines_added += change.totalLinesAdded
+            totals.total_lines_deleted += change.totalLinesDeleted
+            
+            # Count by source
+            source_counter[change.source] += 1
+            if change.source == "TAB":
+                totals.tab_changes += 1
+                totals.tab_lines_added += change.totalLinesAdded
+                totals.tab_lines_deleted += change.totalLinesDeleted
+            elif change.source == "COMPOSER":
+                totals.composer_changes += 1
+                totals.composer_lines_added += change.totalLinesAdded
+                totals.composer_lines_deleted += change.totalLinesDeleted
+            
+            # Count models
+            if change.model:
+                model_counter[change.model] += 1
+            
+            # Count file extensions
+            for file_meta in change.metadata:
+                if file_meta.fileExtension:
+                    extension_counter[file_meta.fileExtension] += 1
+        
+        totals.unique_file_extensions = len(extension_counter)
+        if model_counter:
+            totals.most_used_model = model_counter.most_common(1)[0][0]
+        
+        # Create breakdown with detailed change info
+        breakdown = {
+            "changes": [c.model_dump() for c in user_change_list],
+            "source_distribution": dict(source_counter),
+            "model_usage": dict(model_counter),
+            "file_extensions": dict(extension_counter),
+            "productivity_metrics": {
+                "average_lines_per_change": round((totals.total_lines_added + totals.total_lines_deleted) / 
+                                                max(1, totals.total_changes), 2),
+                "tab_vs_composer_ratio": round(totals.tab_changes / max(1, totals.composer_changes), 2) if totals.composer_changes > 0 else None,
+                "tab_efficiency": round((totals.tab_lines_added + totals.tab_lines_deleted) / max(1, totals.tab_changes), 2),
+                "composer_efficiency": round((totals.composer_lines_added + totals.composer_lines_deleted) / max(1, totals.composer_changes), 2)
+            }
+        }
+        
+        identifier = f"cursor-ai-changes:{org}:{user_email}:{date_iso[:10]}"
+        
+        change_records.append(
+            AiCodeChangeRecord(
+                identifier=identifier,
+                org=org,
+                user_email=user_email,
+                record_date_iso=date_iso,
+                totals=totals,
+                breakdown=breakdown,
+            )
+        )
+    
+    return change_records
 
