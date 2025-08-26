@@ -62,14 +62,6 @@
         "type": "number",
         "title": "Unique File Extensions"
       },
-      "tab_vs_composer_ratio": {
-        "type": "number",
-        "title": "TAB vs Composer Ratio"
-      },
-      "average_change_size": {
-        "type": "number",
-        "title": "Average Change Size (lines)"
-      },
       "breakdown": {
         "type": "object",
         "title": "Breakdown Details"

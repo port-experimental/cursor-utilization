@@ -66,10 +66,6 @@
         "type": "string",
         "title": "Most Active Repository"
       },
-      "ai_assistance_percentage": {
-        "type": "number",
-        "title": "AI Assistance Percentage"
-      },
       "breakdown": {
         "type": "object",
         "title": "Breakdown Details"
