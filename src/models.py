@@ -244,3 +244,30 @@ class AiCodeChangeRecord(BaseModel):
     totals: AiCodeChangeTotals
     breakdown: Dict[str, Any] = Field(default_factory=dict)
 
+
+# Individual Commit Record Models (replaces aggregated AiCommitRecord)
+class IndividualCommitRecord(BaseModel):
+    """Individual commit record with full details from the API"""
+    identifier: str  # Based on commitHash
+    commitHash: str
+    userId: str
+    userEmail: str
+    repoName: str
+    branchName: str
+    isPrimaryBranch: bool
+    totalLinesAdded: int = 0
+    totalLinesDeleted: int = 0
+    tabLinesAdded: int = 0
+    tabLinesDeleted: int = 0
+    composerLinesAdded: int = 0
+    composerLinesDeleted: int = 0
+    nonAiLinesAdded: int = 0
+    nonAiLinesDeleted: int = 0
+    message: str
+    commitTs: str
+    createdAt: str
+    org: str  # Added for organization tracking
+
+
+
+

@@ -7,7 +7,7 @@ import pendulum as pdt
 
 from .config import load_config
 from .cursor_adapter import CursorAdapter
-from .models import DailyUserSummary, UsageEvent, AiCommitMetric, AiCodeChangeMetric, AiCodeChangeFileMetadata
+from .models import DailyUserSummary, UsageEvent, AiCommitMetric, AiCodeChangeMetric, AiCodeChangeFileMetadata, IndividualCommitRecord
 from .aggregate import aggregate_daily, aggregate_teams, aggregate_ai_commits, aggregate_ai_code_changes
 from .port_exporter import PortExporter
 
@@ -241,6 +241,109 @@ def run_ai_commits(days: int, start_utc: Optional[str], end_utc: Optional[str], 
     logging.info("🎉 Cursor AI Commits → Port sync completed successfully!")
 
 
+def run_individual_commits(days: int, start_utc: Optional[str], end_utc: Optional[str], user_filter: Optional[str], anonymize: bool, with_relations: bool) -> None:
+    """Run individual commit tracking mode"""
+    logging.info(f"Starting Cursor Individual Commits → Port sync: days={days}")
+    
+    cfg = load_config()
+    logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}")
+    
+    cursor = CursorAdapter(api_key=cfg.cursor_api_key)
+    exporter = PortExporter(
+        base_url=cfg.port_base_url,
+        auth_url=cfg.port_auth_url,
+        client_id=cfg.port_client_id,
+        client_secret=cfg.port_client_secret,
+        dry_run=cfg.dry_run,
+    )
+
+    # Convert dates to AI API format
+    start_date = format_date_for_ai_api(start_utc) if start_utc else f"{days}d"
+    end_date = format_date_for_ai_api(end_utc) if end_utc else "now"
+    
+    logging.info(f"Fetching AI commit data from {start_date} to {end_date}")
+
+    try:
+        # Get all commits with pagination
+        all_commits = []
+        page = 1
+        while True:
+            logging.info(f"  Fetching page {page} of AI commit metrics...")
+            
+            response = cursor.get_ai_commit_metrics(
+                start_date=start_date,
+                end_date=end_date,
+                user=user_filter,
+                page=page,
+                page_size=200  # Use larger page size for fewer API calls
+            )
+            
+            commits = response.get("items", [])
+            if not commits:
+                break
+                
+            all_commits.extend([AiCommitMetric(**c) for c in commits])
+            
+            # Check if there are more pages
+            if page >= response.get("totalCount", 0) // 200 + 1:
+                break
+            page += 1
+        
+        logging.info(f"Retrieved {len(all_commits)} AI commit records")
+        
+        if anonymize:
+            # Hash user emails
+            import hashlib
+            for commit in all_commits:
+                original = commit.userEmail
+                hashed = hashlib.sha256(original.encode("utf-8")).hexdigest()
+                commit.userEmail = f"user_{hashed[:8]}"
+
+        # Convert to individual commit records
+        individual_commits = []
+        for commit in all_commits:
+            individual_commit = IndividualCommitRecord(
+                identifier=commit.commitHash,
+                commitHash=commit.commitHash,
+                userId=commit.userId,
+                userEmail=commit.userEmail,
+                repoName=commit.repoName or "unknown",
+                branchName=commit.branchName or "unknown",
+                isPrimaryBranch=commit.isPrimaryBranch or False,
+                totalLinesAdded=commit.totalLinesAdded,
+                totalLinesDeleted=commit.totalLinesDeleted,
+                tabLinesAdded=commit.tabLinesAdded,
+                tabLinesDeleted=commit.tabLinesDeleted,
+                composerLinesAdded=commit.composerLinesAdded,
+                composerLinesDeleted=commit.composerLinesDeleted,
+                nonAiLinesAdded=commit.nonAiLinesAdded or 0,
+                nonAiLinesDeleted=commit.nonAiLinesDeleted or 0,
+                message=commit.message or "",
+                commitTs=commit.commitTs or "",
+                createdAt=commit.createdAt,
+                org=cfg.org_identifier,
+            )
+            individual_commits.append(individual_commit)
+
+        logging.info(f"Generated {len(individual_commits)} individual commit records")
+        
+        if cfg.dry_run:
+            logging.info("DRY RUN: Skipping Port API export")
+        else:
+            logging.info("Exporting to Port API...")
+        
+        exporter.export_individual_commit_records(individual_commits, with_relations)
+        
+        if not cfg.dry_run:
+            logging.info("✓ Successfully exported to Port")
+    
+    except Exception as e:
+        logging.error(f"✗ Failed processing individual commits: {e}")
+        raise
+    
+    logging.info("🎉 Cursor Individual Commits → Port sync completed successfully!")
+
+
 def run_ai_changes(days: int, start_utc: Optional[str], end_utc: Optional[str], user_filter: Optional[str], anonymize: bool, with_relations: bool) -> None:
     """Run AI code changes tracking mode"""
     logging.info(f"Starting Cursor AI Code Changes → Port sync: days={days}")
@@ -350,8 +453,8 @@ def run_ai_changes(days: int, start_utc: Optional[str], end_utc: Optional[str], 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cursor → Port utilization sync")
-    parser.add_argument("--mode", choices=["daily", "backfill", "ai-commits", "ai-changes"], default="daily",
-                       help="Sync mode: daily usage, backfill, AI commits, or AI code changes")
+    parser.add_argument("--mode", choices=["daily", "backfill", "ai-commits", "individual-commits", "ai-changes"], default="daily",
+                       help="Sync mode: daily usage, backfill, AI commits (daily aggregated), individual commits, or AI code changes")
     parser.add_argument("--days", type=int, default=1, help="Number of days to process (UTC)")
     parser.add_argument("--start", type=str, default=None, help="Start date (YYYY-MM-DD) UTC")
     parser.add_argument("--end", type=str, default=None, help="End date (YYYY-MM-DD) UTC")
@@ -367,6 +470,9 @@ def main() -> None:
     elif args.mode == "ai-commits":
         run_ai_commits(days=args.days, start_utc=args.start, end_utc=args.end, 
                       user_filter=args.user, anonymize=args.anonymize_emails, with_relations=args.with_relations)
+    elif args.mode == "individual-commits":
+        run_individual_commits(days=args.days, start_utc=args.start, end_utc=args.end, 
+                              user_filter=args.user, anonymize=args.anonymize_emails, with_relations=args.with_relations)
     elif args.mode == "ai-changes":
         run_ai_changes(days=args.days, start_utc=args.start, end_utc=args.end, 
                       user_filter=args.user, anonymize=args.anonymize_emails, with_relations=args.with_relations)

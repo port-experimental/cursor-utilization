@@ -1,0 +1,126 @@
+{
+    "identifier": "cursor_commit_record",
+    "description": "Individual AI-generated commit record with full details",
+    "title": "Cursor Commit Record",
+    "icon": "Git",
+    "schema": {
+      "properties": {
+        "commitHash": {
+          "type": "string",
+          "title": "Commit Hash"
+        },
+        "userId": {
+          "type": "string",
+          "title": "User ID"
+        },
+        "userEmail": {
+          "type": "string",
+          "title": "User Email"
+        },
+        "repoName": {
+          "type": "string",
+          "title": "Repository Name"
+        },
+        "branchName": {
+          "type": "string",
+          "title": "Branch Name"
+        },
+        "isPrimaryBranch": {
+          "type": "boolean",
+          "title": "Is Primary Branch"
+        },
+        "totalLinesAdded": {
+          "type": "number",
+          "title": "Total Lines Added"
+        },
+        "totalLinesDeleted": {
+          "type": "number",
+          "title": "Total Lines Deleted"
+        },
+        "tabLinesAdded": {
+          "type": "number",
+          "title": "TAB Lines Added"
+        },
+        "tabLinesDeleted": {
+          "type": "number",
+          "title": "TAB Lines Deleted"
+        },
+        "composerLinesAdded": {
+          "type": "number",
+          "title": "Composer Lines Added"
+        },
+        "composerLinesDeleted": {
+          "type": "number",
+          "title": "Composer Lines Deleted"
+        },
+        "nonAiLinesAdded": {
+          "type": "number",
+          "title": "Non-AI Lines Added"
+        },
+        "nonAiLinesDeleted": {
+          "type": "number",
+          "title": "Non-AI Lines Deleted"
+        },
+        "message": {
+          "type": "string",
+          "title": "Commit Message"
+        },
+        "commitTs": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Commit Timestamp"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "title": "Created At"
+        },
+        "org": {
+          "type": "string",
+          "title": "Organization"
+        }
+      },
+      "required": [
+        "commitHash",
+        "userId",
+        "userEmail",
+        "repoName",
+        "branchName",
+        "org"
+      ]
+    },
+    "mirrorProperties": {},
+    "calculationProperties": {
+      "ai_assistance_percentage": {
+        "title": "AI Assistance %",
+        "calculation": "if (.properties.totalLinesAdded + .properties.totalLinesDeleted) == 0 then 0 else ((.properties.tabLinesAdded + .properties.tabLinesDeleted + .properties.composerLinesAdded + .properties.composerLinesDeleted) / (.properties.totalLinesAdded + .properties.totalLinesDeleted)) * 100 end",
+        "type": "number"
+      },
+      "total_ai_lines": {
+        "title": "Total AI Lines Changed",
+        "calculation": ".properties.tabLinesAdded + .properties.tabLinesDeleted + .properties.composerLinesAdded + .properties.composerLinesDeleted",
+        "type": "number"
+      }
+    },
+    "aggregationProperties": {},
+    "relations": {
+      "user": {
+        "title": "User",
+        "target": "_user",
+        "required": false,
+        "many": false
+      },
+      "repository": {
+        "title": "Repository",
+        "target": "service",
+        "required": false,
+        "many": false
+      },
+      "githubPullRequest": {
+        "title": "GitHub Pull Request",
+        "target": "githubPullRequest",
+        "required": false,
+        "many": false
+      }
+    }
+  }

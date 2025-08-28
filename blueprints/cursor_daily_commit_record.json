@@ -1,7 +1,7 @@
 {
-  "identifier": "cursor_ai_commit_record",
+  "identifier": "cursor_daily_commit_record",
   "description": "A daily aggregated record of AI-generated commits by user",
-  "title": "Cursor AI Commit Record",
+  "title": "Cursor Daily Commit Record",
   "icon": "Git",
   "schema": {
     "properties": {

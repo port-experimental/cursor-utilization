@@ -4,10 +4,11 @@ This document describes the integration of Cursor's AI Code Tracking API with Po
 
 ## Overview
 
-The Cursor AI Code Tracking API provides two main types of analytics:
+The Cursor AI Code Tracking API provides comprehensive analytics that can be imported into Port in multiple ways:
 
-1. **AI Commit Metrics** - Aggregated per-commit metrics that attribute lines to TAB, COMPOSER, and non-AI sources
-2. **AI Code Change Metrics** - Granular accepted AI changes, independent of commits
+1. **AI Commit Metrics** - Daily aggregated per-user metrics that attribute lines to TAB, COMPOSER, and non-AI sources
+2. **Individual Commits** - Full individual commit records with relationships to services and pull requests  
+3. **AI Code Change Metrics** - Granular accepted AI changes from the editor, independent of commits
 
 ## Prerequisites
 
@@ -30,11 +31,11 @@ PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token
 DRY_RUN=false
 ```
 
-## New Port Blueprints
+## Port Blueprints
 
-Two new blueprints are created to store AI code tracking data:
+Three blueprints are available for AI code tracking data:
 
-### 1. cursor_ai_commit_record
+### 1. cursor_daily_commit_record
 
 Tracks daily aggregated AI commit metrics per user:
 
@@ -45,8 +46,21 @@ Tracks daily aggregated AI commit metrics per user:
   - Primary branch commit count
   - Repository activity metrics
   - AI assistance percentage (calculated)
+- **Relations**: User entities
 
-### 2. cursor_ai_code_change_record
+### 2. cursor_commit_record  
+
+Tracks individual AI commit records with full metadata:
+
+- **Identifier**: Based on commit hash
+- **Key Metrics**:
+  - Full commit details (hash, message, timestamp, branch)
+  - Lines added/deleted breakdown (TAB, Composer, Non-AI)  
+  - Repository and user information
+  - AI assistance percentage (calculated)
+- **Relations**: User entities, Service entities (repositories), GitHub Pull Request entities
+
+### 3. cursor_ai_code_change_record
 
 Tracks daily aggregated AI code change metrics per user:
 
@@ -57,50 +71,63 @@ Tracks daily aggregated AI code change metrics per user:
   - Model usage statistics
   - File extension diversity
   - Productivity ratios (calculated)
+- **Relations**: User entities, Daily commit records
 
 ## Usage Examples
 
-### 1. Sync AI Commit Data (Last 7 Days)
+### 1. Sync Daily Aggregated AI Commit Data (Last 7 Days)
 
 ```bash
 python -m src.main --mode ai-commits --days 7
 ```
 
-### 2. Sync AI Code Changes (Last 30 Days)
+### 2. Sync Individual AI Commit Records (Last 7 Days)
+
+```bash
+python -m src.main --mode individual-commits --days 7
+```
+
+### 3. Sync AI Code Changes (Last 30 Days)
 
 ```bash
 python -m src.main --mode ai-changes --days 30
 ```
 
-### 3. Sync Specific Date Range
+### 4. Sync Specific Date Range
 
 ```bash
 python -m src.main --mode ai-commits --start 2024-01-01 --end 2024-01-31
 ```
 
-### 4. Filter by Specific User
+### 5. Individual Commits with Relationships
+
+```bash
+python -m src.main --mode individual-commits --days 7 --with-relations
+```
+
+### 6. Filter by Specific User
 
 ```bash
 python -m src.main --mode ai-changes --user developer@company.com --days 14
 ```
 
-### 5. Export with Relations and Email Anonymization
+### 7. Export with Relations and Email Anonymization
 
 ```bash
 python -m src.main --mode ai-commits --days 7 --with-relations --anonymize-emails
 ```
 
-### 6. Dry Run (Test Without Writing to Port)
+### 8. Dry Run (Test Without Writing to Port)
 
 ```bash
-DRY_RUN=true python -m src.main --mode ai-changes --days 1
+DRY_RUN=true python -m src.main --mode individual-commits --days 1
 ```
 
 ## Command Line Options
 
 | Option              | Description                                                      | AI Modes Support |
 | ------------------- | ---------------------------------------------------------------- | ---------------- |
-| `--mode`            | Sync mode: `daily`, `backfill`, `ai-commits`, `ai-changes`     | Required         |
+| `--mode`            | Sync mode: `daily`, `backfill`, `ai-commits`, `individual-commits`, `ai-changes` | Required         |
 | `--days`            | Number of days to process (default: 1)                         | ✅               |
 | `--start`           | Start date (YYYY-MM-DD) UTC                                     | ✅               |
 | `--end`             | End date (YYYY-MM-DD) UTC                                       | ✅               |

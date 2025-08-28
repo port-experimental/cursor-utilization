@@ -96,7 +96,7 @@
     },
     "ai_commits": {
       "title": "AI Commits",
-      "target": "cursor_ai_commit_record",
+      "target": "cursor_daily_commit_record",
       "required": false,
       "many": true
     }

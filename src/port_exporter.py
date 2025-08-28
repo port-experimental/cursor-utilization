@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .models import OrgRecord, UserRecord, TeamRecord, AiCommitRecord, AiCodeChangeRecord
+from .models import OrgRecord, UserRecord, TeamRecord, AiCommitRecord, AiCodeChangeRecord, IndividualCommitRecord
 
 
 class PortExporter:
@@ -217,7 +217,7 @@ class PortExporter:
             commit_entities.append(self._format_entity(cr.identifier, props, commit_relations))
 
         if commit_entities:
-            self._bulk_in_chunks_by_blueprint("cursor_ai_commit_record", commit_entities)
+            self._bulk_in_chunks_by_blueprint("cursor_daily_commit_record", commit_entities)
 
     def export_ai_code_change_records(self, change_records: List[AiCodeChangeRecord], with_relations: bool = False) -> None:
         """Export AI code change records to Port"""
@@ -254,3 +254,46 @@ class PortExporter:
 
         if change_entities:
             self._bulk_in_chunks_by_blueprint("cursor_ai_code_change_record", change_entities)
+
+    def export_individual_commit_records(self, commit_records: List[IndividualCommitRecord], with_relations: bool = False) -> None:
+        """Export individual commit records to Port"""
+        commit_entities: List[Dict[str, Any]] = []
+
+        for cr in commit_records:
+            props = {
+                "commitHash": cr.commitHash,
+                "userId": cr.userId,
+                "userEmail": cr.userEmail,
+                "repoName": cr.repoName,
+                "branchName": cr.branchName,
+                "isPrimaryBranch": cr.isPrimaryBranch,
+                "totalLinesAdded": cr.totalLinesAdded,
+                "totalLinesDeleted": cr.totalLinesDeleted,
+                "tabLinesAdded": cr.tabLinesAdded,
+                "tabLinesDeleted": cr.tabLinesDeleted,
+                "composerLinesAdded": cr.composerLinesAdded,
+                "composerLinesDeleted": cr.composerLinesDeleted,
+                "nonAiLinesAdded": cr.nonAiLinesAdded,
+                "nonAiLinesDeleted": cr.nonAiLinesDeleted,
+                "message": cr.message,
+                "commitTs": cr.commitTs,
+                "createdAt": cr.createdAt,
+                "org": cr.org,
+            }
+
+            # Add relations if requested
+            commit_relations = None
+            if with_relations:
+                commit_relations = {
+                    "user": cr.userEmail,
+                    "repository": cr.repoName  # Maps to service blueprint
+                }
+                # githubPullRequest relation would need PR lookup logic based on commit SHA
+                # This could be enhanced with actual PR lookup logic
+            
+            commit_entities.append(self._format_entity(cr.identifier, props, commit_relations))
+
+        if commit_entities:
+            self._bulk_in_chunks_by_blueprint("cursor_commit_record", commit_entities)
+
+
