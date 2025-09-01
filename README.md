@@ -43,16 +43,26 @@ Import Cursor Admin API metrics and AI Code Tracking data into Port as both dail
 ### Setup
 1) Create and export environment variables (or copy `env.sample` to `.env` in your runner):
 
-```
+**Required Variables:**
+```bash
 X_CURSOR_API_KEY=key_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 PORT_CLIENT_ID=your_port_client_id
 PORT_CLIENT_SECRET=your_port_client_secret
-PORT_BASE_URL=https://api.getport.io
-PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token
-ORG_IDENTIFIER=your-org
-TIMEZONE=UTC
-LOOKBACK_DAYS=1
-DRY_RUN=false
+ORG_IDENTIFIER=your-org-identifier
+```
+
+**Optional Variables (with defaults):**
+```bash
+PORT_BASE_URL=https://api.getport.io              # Port API base URL
+PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token  # Port auth endpoint
+DRY_RUN=false                                     # Set to 'true' for testing without writes
+```
+
+**Deprecated/Unused Variables:**
+```bash
+# These are no longer used but may exist in old configs
+TIMEZONE=UTC                                      # Timezone handling is now built-in
+LOOKBACK_DAYS=1                                   # Use --days command line argument instead
 ```
 
 2) Install dependencies:
@@ -95,8 +105,48 @@ python -m src.main --mode individual-commits --days 7
 python -m src.main --mode ai-changes --days 7
 ```
 
+#### Mode Selection Guide
+
+| Mode | Use Case | Output | Frequency |
+|------|----------|--------|-----------|
+| `daily` | Regular usage monitoring | Daily usage aggregations per user/org | Daily scheduled |
+| `backfill` | Historical data import | Same as daily, for date ranges | One-time/manual |
+| `ai-commits` | Daily commit analytics | User daily commit summaries | Daily scheduled |
+| `individual-commits` | Detailed commit analysis | Each commit as separate record with relationships | Manual/periodic |
+| `ai-changes` | Editor-level AI usage | Individual code changes from TAB/Composer | Manual/periodic |
+
 ### GitHub Actions (recommended)
-Workflow: `.github/workflows/cursor-utilization.yml` runs nightly and on demand. Configure repository secrets for the env vars above.
+
+The workflow `.github/workflows/cursor-utilization.yml` provides automated syncing with multiple scheduling options:
+
+#### Scheduled Runs
+- **02:15 UTC daily**: Usage metrics sync (`--mode daily`)
+- **02:30 UTC daily**: AI commits sync (`--mode ai-commits`)
+
+#### Manual Execution
+Use GitHub's "Run workflow" button with these options:
+- **Mode**: Choose from `daily`, `backfill`, `ai-commits`, `individual-commits`, `ai-changes`
+- **Days**: Number of days to process (default: 1)
+- **Date Range**: Optional start/end dates (YYYY-MM-DD)
+- **User Filter**: Filter AI data for specific user (email)
+- **Relations**: Include Port entity relationships 
+- **Anonymize**: Hash emails for privacy
+
+#### Required Repository Configuration
+
+**Secrets** (sensitive data):
+```bash
+X_CURSOR_API_KEY          # Your Cursor Admin API key
+PORT_CLIENT_ID            # Port application client ID
+PORT_CLIENT_SECRET        # Port application client secret  
+ORG_IDENTIFIER           # Your organization identifier
+```
+
+**Variables** (optional, public):
+```bash
+PORT_BASE_URL            # Default: https://api.getport.io
+PORT_AUTH_URL            # Default: https://api.getport.io/v1/auth/access_token
+```
 
 ### Notes
 

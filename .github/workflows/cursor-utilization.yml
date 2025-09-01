@@ -2,49 +2,157 @@ name: Cursor Utilization → Port
 
 on:
   schedule:
-    - cron: '15 2 * * *' # daily at 02:15 UTC
+    - cron: '15 2 * * *' # daily at 02:15 UTC (usage metrics)
+    - cron: '30 2 * * *' # daily at 02:30 UTC (AI commits)
   workflow_dispatch:
     inputs:
       mode:
-        description: 'daily or backfill'
-        required: false
+        description: 'Sync mode'
+        required: true
         default: 'daily'
+        type: choice
+        options:
+          - daily
+          - backfill
+          - ai-commits
+          - individual-commits
+          - ai-changes
       days:
-        description: 'number of days to process'
+        description: 'Number of days to process'
         required: false
         default: '1'
+        type: string
+      start_date:
+        description: 'Start date (YYYY-MM-DD) UTC - optional'
+        required: false
+        type: string
+      end_date:
+        description: 'End date (YYYY-MM-DD) UTC - optional'
+        required: false
+        type: string
+      user_filter:
+        description: 'Filter by specific user (email) - AI modes only'
+        required: false
+        type: string
       with_relations:
         description: 'Include Port relations between entities'
         required: false
         default: false
         type: boolean
+      anonymize_emails:
+        description: 'Hash emails before export (privacy mode)'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
-  run:
+  # Daily Usage Metrics (scheduled)
+  daily-usage:
     runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '15 2 * * *'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m venv .venv
           source .venv/bin/activate
           pip install -r requirements.txt
-      - name: Run ingestion
+      - name: Sync Daily Usage Metrics
         env:
           X_CURSOR_API_KEY: ${{ secrets.X_CURSOR_API_KEY }}
           PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
           PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
           PORT_BASE_URL: ${{ vars.PORT_BASE_URL || 'https://api.getport.io' }}
           PORT_AUTH_URL: ${{ vars.PORT_AUTH_URL || 'https://api.getport.io/v1/auth/access_token' }}
-          ORG_IDENTIFIER: ${{ vars.ORG_IDENTIFIER }}
-          TIMEZONE: UTC
-          LOOKBACK_DAYS: 1
+          ORG_IDENTIFIER: ${{ secrets.ORG_IDENTIFIER }}
           DRY_RUN: false
         run: |
           source .venv/bin/activate
-          python -m src.main --mode "${{ inputs.mode || 'daily' }}" --days "${{ inputs.days || '1' }}" ${{ inputs.with_relations == true && '--with-relations' || '' }}
+          python -m src.main --mode daily --days 1 --with-relations
+
+  # AI Commits (scheduled)  
+  daily-ai-commits:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' && github.event.schedule == '30 2 * * *'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Sync Daily AI Commits
+        env:
+          X_CURSOR_API_KEY: ${{ secrets.X_CURSOR_API_KEY }}
+          PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
+          PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
+          PORT_BASE_URL: ${{ vars.PORT_BASE_URL || 'https://api.getport.io' }}
+          PORT_AUTH_URL: ${{ vars.PORT_AUTH_URL || 'https://api.getport.io/v1/auth/access_token' }}
+          ORG_IDENTIFIER: ${{ secrets.ORG_IDENTIFIER }}
+          DRY_RUN: false
+        run: |
+          source .venv/bin/activate
+          python -m src.main --mode ai-commits --days 1 --with-relations
+
+  # Manual/On-demand execution
+  manual-sync:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements.txt
+      - name: Run Cursor → Port Sync
+        env:
+          X_CURSOR_API_KEY: ${{ secrets.X_CURSOR_API_KEY }}
+          PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
+          PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
+          PORT_BASE_URL: ${{ vars.PORT_BASE_URL || 'https://api.getport.io' }}
+          PORT_AUTH_URL: ${{ vars.PORT_AUTH_URL || 'https://api.getport.io/v1/auth/access_token' }}
+          ORG_IDENTIFIER: ${{ secrets.ORG_IDENTIFIER }}
+          DRY_RUN: false
+        run: |
+          source .venv/bin/activate
+          
+          # Build command arguments
+          CMD_ARGS="--mode ${{ inputs.mode }}"
+          CMD_ARGS="$CMD_ARGS --days ${{ inputs.days || '1' }}"
+          
+          # Add date range if provided
+          if [ -n "${{ inputs.start_date }}" ]; then
+            CMD_ARGS="$CMD_ARGS --start ${{ inputs.start_date }}"
+          fi
+          if [ -n "${{ inputs.end_date }}" ]; then
+            CMD_ARGS="$CMD_ARGS --end ${{ inputs.end_date }}"
+          fi
+          
+          # Add user filter for AI modes if provided
+          if [ -n "${{ inputs.user_filter }}" ] && [[ "${{ inputs.mode }}" =~ ^(ai-commits|individual-commits|ai-changes)$ ]]; then
+            CMD_ARGS="$CMD_ARGS --user '${{ inputs.user_filter }}'"
+          fi
+          
+          # Add optional flags
+          if [ "${{ inputs.with_relations }}" = "true" ]; then
+            CMD_ARGS="$CMD_ARGS --with-relations"
+          fi
+          if [ "${{ inputs.anonymize_emails }}" = "true" ]; then
+            CMD_ARGS="$CMD_ARGS --anonymize-emails"
+          fi
+          
+          # Execute the command
+          echo "Running: python -m src.main $CMD_ARGS"
+          python -m src.main $CMD_ARGS
 
 

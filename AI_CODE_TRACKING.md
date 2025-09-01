@@ -19,17 +19,26 @@ The Cursor AI Code Tracking API provides comprehensive analytics that can be imp
 Ensure your environment variables are set:
 
 ```bash
-# Existing configuration
-X_CURSOR_API_KEY=your_cursor_api_key
-ORG_IDENTIFIER=your_org
-PORT_CLIENT_ID=your_port_client_id
-PORT_CLIENT_SECRET=your_port_client_secret
+# Required
+X_CURSOR_API_KEY=your_cursor_api_key             # Cursor Admin API key (org admin)
+ORG_IDENTIFIER=your_org                          # Your organization identifier  
+PORT_CLIENT_ID=your_port_client_id               # Port application client ID
+PORT_CLIENT_SECRET=your_port_client_secret       # Port application client secret
 
-# Optional
-PORT_BASE_URL=https://api.getport.io
-PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token
-DRY_RUN=false
+# Optional (with defaults)
+PORT_BASE_URL=https://api.getport.io             # Port API base URL
+PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token  # Port auth endpoint  
+DRY_RUN=false                                    # Set to 'true' for testing
 ```
+
+### GitHub Actions Integration
+
+The workflow automatically runs AI commit tracking daily at 02:30 UTC. You can also trigger individual modes manually through GitHub's "Run workflow" interface with full control over:
+
+- Mode selection (ai-commits, individual-commits, ai-changes)
+- Date ranges and user filtering
+- Privacy options (email anonymization)
+- Relationship inclusion
 
 ## Port Blueprints
 
