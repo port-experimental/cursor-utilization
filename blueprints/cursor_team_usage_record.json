@@ -35,7 +35,21 @@
     "required": ["record_date", "org", "team"]
   },
   "mirrorProperties": {},
-  "calculationProperties": {},
+  "calculationProperties": {
+    "acceptance_rate": {
+      "title": "Acceptance Rate",
+      "description": "Percentage of AI suggestions that were accepted by this team",
+      "calculation": "if (.properties.total_accepts + .properties.total_rejects) > 0 then (.properties.total_accepts / (.properties.total_accepts + .properties.total_rejects)) * 100 else 0 end",
+      "type": "number",
+      "colorized": true,
+      "colors": {
+        "25": "red",
+        "50": "orange",
+        "75": "yellow",
+        "90": "green"
+      }
+    }
+  },
   "aggregationProperties": {},
   "relations": {
     "team_members": {
