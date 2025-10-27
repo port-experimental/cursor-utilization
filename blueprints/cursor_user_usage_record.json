@@ -54,7 +54,7 @@
   "relations": {
     "user": {
       "title": "User",
-      "target": "_user",
+      "target": "{{USER_BLUEPRINT}}",
       "required": false,
       "many": false
     }

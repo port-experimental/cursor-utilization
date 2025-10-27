@@ -106,19 +106,19 @@
     "relations": {
       "user": {
         "title": "User",
-        "target": "_user",
+        "target": "{{USER_BLUEPRINT}}",
         "required": false,
         "many": false
       },
       "repository": {
         "title": "Repository",
-        "target": "service",
+        "target": "{{SERVICE_BLUEPRINT}}",
         "required": false,
         "many": false
       },
       "githubPullRequest": {
         "title": "GitHub Pull Request",
-        "target": "githubPullRequest",
+        "target": "{{GITHUB_PULL_REQUEST_BLUEPRINT}}",
         "required": false,
         "many": false
       }

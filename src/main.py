@@ -33,13 +33,20 @@ def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], 
     relations_status = "enabled" if with_relations else "disabled"
     logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}, relations: {relations_status}")
     
-    cursor = CursorAdapter(api_key=cfg.cursor_api_key)
+    cursor = CursorAdapter(
+        api_key=cfg.cursor_api_key,
+        requests_per_minute=cfg.rate_limit_requests_per_minute,
+        delay_between_pages=cfg.rate_limit_delay_between_pages
+    )
     exporter = PortExporter(
         base_url=cfg.port_base_url,
         auth_url=cfg.port_auth_url,
         client_id=cfg.port_client_id,
         client_secret=cfg.port_client_secret,
         dry_run=cfg.dry_run,
+        user_blueprint=cfg.user_blueprint,
+        service_blueprint=cfg.service_blueprint,
+        github_pull_request_blueprint=cfg.github_pull_request_blueprint,
     )
 
     # Determine day windows in UTC
@@ -85,6 +92,8 @@ def run(mode: str, days: int, start_utc: Optional[str], end_utc: Optional[str], 
                 if not pagination.get("hasNextPage"):
                     break
                 page += 1
+                import time
+                time.sleep(cursor.delay_between_pages)
             logging.info(f"  Retrieved {total_events} usage events from Cursor API")
             
 
@@ -151,13 +160,20 @@ def run_ai_commits(days: int, start_utc: Optional[str], end_utc: Optional[str], 
     cfg = load_config()
     logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}")
     
-    cursor = CursorAdapter(api_key=cfg.cursor_api_key)
+    cursor = CursorAdapter(
+        api_key=cfg.cursor_api_key,
+        requests_per_minute=cfg.rate_limit_requests_per_minute,
+        delay_between_pages=cfg.rate_limit_delay_between_pages
+    )
     exporter = PortExporter(
         base_url=cfg.port_base_url,
         auth_url=cfg.port_auth_url,
         client_id=cfg.port_client_id,
         client_secret=cfg.port_client_secret,
         dry_run=cfg.dry_run,
+        user_blueprint=cfg.user_blueprint,
+        service_blueprint=cfg.service_blueprint,
+        github_pull_request_blueprint=cfg.github_pull_request_blueprint,
     )
 
     # Convert dates to AI API format
@@ -191,6 +207,8 @@ def run_ai_commits(days: int, start_utc: Optional[str], end_utc: Optional[str], 
             if page >= response.get("totalCount", 0) // 200 + 1:
                 break
             page += 1
+            import time
+            time.sleep(cursor.delay_between_pages)
         
         logging.info(f"Retrieved {len(all_commits)} AI commit records")
         
@@ -248,13 +266,20 @@ def run_individual_commits(days: int, start_utc: Optional[str], end_utc: Optiona
     cfg = load_config()
     logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}")
     
-    cursor = CursorAdapter(api_key=cfg.cursor_api_key)
+    cursor = CursorAdapter(
+        api_key=cfg.cursor_api_key,
+        requests_per_minute=cfg.rate_limit_requests_per_minute,
+        delay_between_pages=cfg.rate_limit_delay_between_pages
+    )
     exporter = PortExporter(
         base_url=cfg.port_base_url,
         auth_url=cfg.port_auth_url,
         client_id=cfg.port_client_id,
         client_secret=cfg.port_client_secret,
         dry_run=cfg.dry_run,
+        user_blueprint=cfg.user_blueprint,
+        service_blueprint=cfg.service_blueprint,
+        github_pull_request_blueprint=cfg.github_pull_request_blueprint,
     )
 
     # Convert dates to AI API format
@@ -288,6 +313,8 @@ def run_individual_commits(days: int, start_utc: Optional[str], end_utc: Optiona
             if page >= response.get("totalCount", 0) // 200 + 1:
                 break
             page += 1
+            import time
+            time.sleep(cursor.delay_between_pages)
         
         logging.info(f"Retrieved {len(all_commits)} AI commit records")
         
@@ -351,13 +378,20 @@ def run_ai_changes(days: int, start_utc: Optional[str], end_utc: Optional[str], 
     cfg = load_config()
     logging.info(f"Configuration loaded - org: {cfg.org_identifier}, dry_run: {cfg.dry_run}")
     
-    cursor = CursorAdapter(api_key=cfg.cursor_api_key)
+    cursor = CursorAdapter(
+        api_key=cfg.cursor_api_key,
+        requests_per_minute=cfg.rate_limit_requests_per_minute,
+        delay_between_pages=cfg.rate_limit_delay_between_pages
+    )
     exporter = PortExporter(
         base_url=cfg.port_base_url,
         auth_url=cfg.port_auth_url,
         client_id=cfg.port_client_id,
         client_secret=cfg.port_client_secret,
         dry_run=cfg.dry_run,
+        user_blueprint=cfg.user_blueprint,
+        service_blueprint=cfg.service_blueprint,
+        github_pull_request_blueprint=cfg.github_pull_request_blueprint,
     )
 
     # Convert dates to AI API format
@@ -401,6 +435,8 @@ def run_ai_changes(days: int, start_utc: Optional[str], end_utc: Optional[str], 
             if page >= response.get("totalCount", 0) // 200 + 1:
                 break
             page += 1
+            import time
+            time.sleep(cursor.delay_between_pages)
         
         logging.info(f"Retrieved {len(all_changes)} AI code change records")
         
@@ -451,10 +487,30 @@ def run_ai_changes(days: int, start_utc: Optional[str], end_utc: Optional[str], 
     logging.info("🎉 Cursor AI Code Changes → Port sync completed successfully!")
 
 
+def setup_blueprints() -> None:
+    """Set up blueprints with configurable relation targets"""
+    logging.info("Setting up Cursor blueprints with configurable relation targets...")
+    
+    cfg = load_config()
+    exporter = PortExporter(
+        base_url=cfg.port_base_url,
+        auth_url=cfg.port_auth_url,
+        client_id=cfg.port_client_id,
+        client_secret=cfg.port_client_secret,
+        dry_run=cfg.dry_run,
+        user_blueprint=cfg.user_blueprint,
+        service_blueprint=cfg.service_blueprint,
+        github_pull_request_blueprint=cfg.github_pull_request_blueprint,
+    )
+    
+    exporter.setup_blueprints()
+    logging.info("🎉 Blueprint setup completed!")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Cursor → Port utilization sync")
-    parser.add_argument("--mode", choices=["daily", "backfill", "ai-commits", "individual-commits", "ai-changes"], default="daily",
-                       help="Sync mode: daily usage, backfill, AI commits (daily aggregated), individual commits, or AI code changes")
+    parser.add_argument("--mode", choices=["daily", "backfill", "ai-commits", "individual-commits", "ai-changes", "setup-blueprints"], default="daily",
+                       help="Sync mode: daily usage, backfill, AI commits (daily aggregated), individual commits, AI code changes, or setup blueprints")
     parser.add_argument("--days", type=int, default=1, help="Number of days to process (UTC)")
     parser.add_argument("--start", type=str, default=None, help="Start date (YYYY-MM-DD) UTC")
     parser.add_argument("--end", type=str, default=None, help="End date (YYYY-MM-DD) UTC")
@@ -476,6 +532,8 @@ def main() -> None:
     elif args.mode == "ai-changes":
         run_ai_changes(days=args.days, start_utc=args.start, end_utc=args.end, 
                       user_filter=args.user, anonymize=args.anonymize_emails, with_relations=args.with_relations)
+    elif args.mode == "setup-blueprints":
+        setup_blueprints()
 
 if __name__ == "__main__":
     main()

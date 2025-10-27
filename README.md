@@ -56,6 +56,11 @@ ORG_IDENTIFIER=your-org-identifier
 PORT_BASE_URL=https://api.getport.io              # Port API base URL
 PORT_AUTH_URL=https://api.getport.io/v1/auth/access_token  # Port auth endpoint
 DRY_RUN=false                                     # Set to 'true' for testing without writes
+USER_BLUEPRINT=_user                              # Blueprint identifier for user entities
+SERVICE_BLUEPRINT=service                         # Blueprint identifier for service/repository entities
+GITHUB_PULL_REQUEST_BLUEPRINT=githubPullRequest  # Blueprint identifier for GitHub PR entities
+RATE_LIMIT_REQUESTS_PER_MINUTE=55                # Max requests/min to Cursor API (default 55, limit is 60)
+RATE_LIMIT_DELAY_BETWEEN_PAGES=1.5               # Delay in seconds between pagination requests
 ```
 
 **Deprecated/Unused Variables:**
@@ -73,10 +78,17 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-3) Create the blueprints in Port (UI or API) using files under `blueprints/`:
+3) Set up the blueprints in Port with configurable relation targets:
+
+**Option A: Use the automated setup (recommended):**
+```bash
+python -m src.main --mode setup-blueprints
+```
+
+**Option B: Create manually using files under `blueprints/`:**
    - Daily usage blueprints: `cursor_usage_record`, `cursor_user_usage_record`, `cursor_team_usage_record` 
    - AI code tracking blueprints: `cursor_commit_record`, `cursor_daily_commit_record`, `cursor_ai_code_change_record`
-   - Note: Ensure your existing `service` and `githubPullRequest` blueprints are available for commit relationships
+   - Note: The blueprint files now use configurable relation targets that can be customized via environment variables
 
 4) Run locally:
 
@@ -100,9 +112,14 @@ python -m src.main --mode ai-commits --days 7
 python -m src.main --mode individual-commits --days 7
 ```
 
-**AI code changes (individual editor changes):**
+**AI code changes tracking (daily aggregated by user):**
 ```
 python -m src.main --mode ai-changes --days 7
+```
+
+**Set up blueprints with configurable relation targets:**
+```
+python -m src.main --mode setup-blueprints
 ```
 
 #### Mode Selection Guide

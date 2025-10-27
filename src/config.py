@@ -16,6 +16,13 @@ class AppConfig:
     timezone: str
     lookback_days: int
     dry_run: bool
+    # Relation target configurations
+    user_blueprint: str
+    service_blueprint: str
+    github_pull_request_blueprint: str
+    # Rate limiting configuration
+    rate_limit_requests_per_minute: int
+    rate_limit_delay_between_pages: float
 
 
 def load_config() -> AppConfig:
@@ -31,4 +38,11 @@ def load_config() -> AppConfig:
         timezone=os.environ.get("TIMEZONE", "UTC"),
         lookback_days=int(os.environ.get("LOOKBACK_DAYS", "1")),
         dry_run=os.environ.get("DRY_RUN", "false").lower() == "true",
+        # Relation target configurations with defaults
+        user_blueprint=os.environ.get("USER_BLUEPRINT", "_user"),
+        service_blueprint=os.environ.get("SERVICE_BLUEPRINT", "service"),
+        github_pull_request_blueprint=os.environ.get("GITHUB_PULL_REQUEST_BLUEPRINT", "githubPullRequest"),
+        # Rate limiting configuration
+        rate_limit_requests_per_minute=int(os.environ.get("RATE_LIMIT_REQUESTS_PER_MINUTE", "55")),
+        rate_limit_delay_between_pages=float(os.environ.get("RATE_LIMIT_DELAY_BETWEEN_PAGES", "1.5")),
     )

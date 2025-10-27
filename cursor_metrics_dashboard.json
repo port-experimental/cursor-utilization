@@ -1,0 +1,341 @@
+{
+  "identifier": "cursor-metrics-dashboard",
+  "title": "🎯 Cursor AI Usage & Productivity Dashboard",
+  "icon": "Code",
+  "type": "dashboard",
+  "widgets": [
+    {
+      "id": "overview-metrics",
+      "type": "entities-number-chart",
+      "title": "📊 Total Active Users",
+      "description": "Number of active users using Cursor AI",
+      "icon": "Users",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      },
+      "chartType": "countEntities"
+    },
+    {
+      "id": "total-accepts",
+      "type": "entities-number-chart",
+      "title": "✅ Total AI Accepts",
+      "description": "Total number of AI suggestions accepted",
+      "icon": "Check",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record", 
+            "property": "$blueprint"
+          }
+        ]
+      },
+      "chartType": "aggregateProperty",
+      "property": "property#total_accepts",
+      "func": "sum"
+    },
+    {
+      "id": "total-cost",
+      "type": "entities-number-chart",
+      "title": "💰 Total Cost",
+      "description": "Total cost of Cursor AI usage",
+      "icon": "Dollar",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      },
+      "chartType": "aggregateProperty",
+      "property": "property#total_cost",
+      "func": "sum"
+    },
+    {
+      "id": "cursor-agent",
+      "type": "ai-agent", 
+      "title": "🤖 Cursor Assistant",
+      "description": "AI assistant for analyzing cursor usage data",
+      "icon": "Bot",
+      "agentIdentifier": "cursor_usage_record"
+    },
+    {
+      "id": "acceptance-rate-trend",
+      "type": "line-chart",
+      "title": "📈 AI Suggestion Acceptance Rate Over Time",
+      "description": "Track how well users are accepting AI suggestions",
+      "icon": "LineChart",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "chartType": "aggregateProperty",
+      "property": "property#acceptance_rate",
+      "func": "average",
+      "timeInterval": "isoWeek",
+      "timeRange": {
+        "preset": "lastMonth"
+      },
+      "measureTimeBy": "$createdAt",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "request-type-breakdown",
+      "type": "entities-pie-chart",
+      "title": "🔄 Request Type Distribution", 
+      "description": "How users are interacting with Cursor AI features",
+      "icon": "Pie",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "property": "property#request_type",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "cost-analysis",
+      "type": "line-chart",
+      "title": "💰 Daily Cost Trends",
+      "description": "Track AI usage costs over time",
+      "icon": "LineChart",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "chartType": "aggregateProperty",
+      "property": "property#total_cost",
+      "func": "sum",
+      "timeInterval": "isoWeek",
+      "timeRange": {
+        "preset": "lastMonth"
+      },
+      "measureTimeBy": "$createdAt",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ai-code-changes",
+      "type": "line-chart",
+      "title": "🤖 AI Code Generation Trends",
+      "description": "Track TAB vs Composer usage for code changes",
+      "icon": "LineChart",
+      "agentIdentifier": "cursor_ai_code_change_record",
+      "blueprint": "cursor_ai_code_change_record",
+      "chartType": "countEntities",
+      "timeInterval": "isoWeek",
+      "timeRange": {
+        "preset": "lastMonth"
+      },
+      "measureTimeBy": "$createdAt",
+      "breakdownProperty": "property#change_type",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_ai_code_change_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "team-comparison",
+      "type": "entities-pie-chart",
+      "title": "🏆 Team Performance Comparison",
+      "description": "Compare AI usage and productivity across different teams",
+      "icon": "Pie",
+      "agentIdentifier": "cursor_team_usage_record",
+      "blueprint": "cursor_team_usage_record",
+      "property": "property#team_name",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_team_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "model-usage-distribution",
+      "type": "entities-pie-chart",
+      "title": "🧠 AI Model Usage Distribution",
+      "description": "Which AI models are being used most frequently",
+      "icon": "Pie",
+      "agentIdentifier": "cursor_usage_record",
+      "blueprint": "cursor_usage_record",
+      "property": "property#model",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "user-activity-heatmap",
+      "type": "table-entities-explorer",
+      "title": "👥 User Activity Breakdown",
+      "description": "Detailed view of individual user productivity and AI usage patterns",
+      "icon": "Table",
+      "agentIdentifier": "cursor_user_usage_record",
+      "blueprint": "cursor_user_usage_record",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_user_usage_record",
+            "property": "$blueprint"
+          }
+        ]
+      },
+      "blueprintConfig": {
+        "cursor_user_usage_record": {
+          "propertiesSettings": {
+            "shown": [
+              "$identifier",
+              "$title",
+              "user_id",
+              "total_accepts",
+              "total_rejects",
+              "acceptance_rate",
+              "total_cost",
+              "record_date"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "commit-activity",
+      "type": "line-chart",
+      "title": "📝 Daily Commit Activity",
+      "description": "Track code commits with AI assistance breakdown",
+      "icon": "LineChart",
+      "agentIdentifier": "cursor_daily_commit_record",
+      "blueprint": "cursor_daily_commit_record",
+      "chartType": "countEntities",
+      "timeInterval": "isoWeek",
+      "timeRange": {
+        "preset": "lastMonth"
+      },
+      "measureTimeBy": "$createdAt",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_daily_commit_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "ai-assistance-percentage",
+      "type": "line-chart",
+      "title": "🎯 AI Assistance Effectiveness",
+      "description": "Percentage of code changes assisted by AI over time",
+      "icon": "LineChart",
+      "agentIdentifier": "cursor_daily_commit_record",
+      "blueprint": "cursor_daily_commit_record",
+      "chartType": "aggregateProperty",
+      "property": "property#ai_assistance_percentage",
+      "func": "average",
+      "timeInterval": "isoWeek",
+      "timeRange": {
+        "preset": "lastMonth"
+      },
+      "measureTimeBy": "$createdAt",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_daily_commit_record",
+            "property": "$blueprint"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repository-activity",
+      "type": "table-entities-explorer",
+      "title": "📁 Repository Activity Overview",
+      "description": "Most active repositories and their AI assistance metrics",
+      "icon": "Table",
+      "agentIdentifier": "cursor_daily_commit_record",
+      "blueprint": "cursor_daily_commit_record",
+      "dataset": {
+        "combinator": "and",
+        "rules": [
+          {
+            "operator": "=",
+            "value": "cursor_daily_commit_record",
+            "property": "$blueprint"
+          }
+        ]
+      },
+      "blueprintConfig": {
+        "cursor_daily_commit_record": {
+          "propertiesSettings": {
+            "shown": [
+              "$identifier",
+              "$title",
+              "repository_name",
+              "total_commits",
+              "ai_assisted_commits",
+              "ai_assistance_percentage",
+              "record_date"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

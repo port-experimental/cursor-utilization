@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import json
+import os
 from typing import Any, Dict, List
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -9,12 +11,17 @@ from .models import OrgRecord, UserRecord, TeamRecord, AiCommitRecord, AiCodeCha
 
 
 class PortExporter:
-    def __init__(self, base_url: str, auth_url: str, client_id: str, client_secret: str, dry_run: bool = False) -> None:
+    def __init__(self, base_url: str, auth_url: str, client_id: str, client_secret: str, dry_run: bool = False, 
+                 user_blueprint: str = "_user", service_blueprint: str = "service", 
+                 github_pull_request_blueprint: str = "githubPullRequest") -> None:
         self.base_url = base_url.rstrip("/")
         self.auth_url = auth_url
         self.client_id = client_id
         self.client_secret = client_secret
         self.dry_run = dry_run
+        self.user_blueprint = user_blueprint
+        self.service_blueprint = service_blueprint
+        self.github_pull_request_blueprint = github_pull_request_blueprint
         self._client = httpx.Client(timeout=60.0)
         self._token = None
 
@@ -62,6 +69,52 @@ class PortExporter:
         for i in range(0, len(entities), chunk_size):
             chunk = entities[i : i + chunk_size]
             self.bulk_upsert_blueprint(blueprint, chunk)
+
+    def _process_blueprint_template(self, blueprint_path: str) -> Dict[str, Any]:
+        """Process a blueprint template file and substitute relation target placeholders"""
+        with open(blueprint_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Substitute placeholders with actual blueprint names
+        content = content.replace("{{USER_BLUEPRINT}}", self.user_blueprint)
+        content = content.replace("{{SERVICE_BLUEPRINT}}", self.service_blueprint)
+        content = content.replace("{{GITHUB_PULL_REQUEST_BLUEPRINT}}", self.github_pull_request_blueprint)
+        
+        return json.loads(content)
+
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=30), stop=stop_after_attempt(5))
+    def create_blueprint(self, blueprint_data: Dict[str, Any]) -> None:
+        """Create or update a blueprint in Port"""
+        if self.dry_run:
+            logging.info(f"DRY RUN: Would create blueprint {blueprint_data.get('identifier', 'unknown')}")
+            return
+        
+        url = f"{self.base_url}/v1/blueprints"
+        resp = self._client.post(url, headers=self._headers(), json=blueprint_data)
+        resp.raise_for_status()
+
+    def setup_blueprints(self, blueprints_dir: str = "blueprints") -> None:
+        """Set up all blueprints with configurable relation targets"""
+        blueprint_files = [
+            "cursor_usage_record.json",
+            "cursor_user_usage_record.json", 
+            "cursor_team_usage_record.json",
+            "cursor_commit_record.json",
+            "cursor_daily_commit_record.json",
+            "cursor_ai_code_change_record.json"
+        ]
+        
+        for blueprint_file in blueprint_files:
+            blueprint_path = os.path.join(blueprints_dir, blueprint_file)
+            if os.path.exists(blueprint_path):
+                try:
+                    blueprint_data = self._process_blueprint_template(blueprint_path)
+                    self.create_blueprint(blueprint_data)
+                    logging.info(f"✓ Created/updated blueprint: {blueprint_data.get('identifier', 'unknown')}")
+                except Exception as e:
+                    logging.error(f"✗ Failed to create blueprint {blueprint_file}: {e}")
+            else:
+                logging.warning(f"Blueprint file not found: {blueprint_path}")
 
     def export_org_users_teams(self, org_record: OrgRecord, user_records: List[UserRecord], team_records: List[TeamRecord], with_relations: bool = False) -> None:
         # Group entities by blueprint for separate API calls
